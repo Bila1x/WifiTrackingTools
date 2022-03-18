@@ -10,27 +10,27 @@ import mostLines
 
 before = time.time()
 
-file = r'1apr2'
+file = r'1dec'
 devices = set()
 print(file)
 
 # csvdir = r'C:\Users\Bilal\Desktop\whereabouts\\'
 # dbdir = 'C:\\Users\\Bilal\\Desktop\\whereabouts\\db.db'
-csvdir = r'O:\whereabouts\hopecsv\\'
-dbdir = 'O:\whereabouts\hopecsv\whereabouts.db'
-
+csv_dir = r'O:\whereabouts\hopecsv\\'
+db_dir = 'O:\whereabouts\hopecsv\whereabouts.db'
+windump_path = '.\WinDump.exe'
 
 # Get prone OUI list
 with open(r'c:\users\bilal\desktop\whereabouts\scripts\proneOUIs.txt', 'r') as pr:
     prone = pr.read().splitlines()
 
 # CONNECT TO DB
-conn = connect(dbdir)
+conn = connect(db_dir)
 conn.text_factory = bytes
 cur = conn.cursor()
 
 # GET LIST OF ALL DEVICES:
-with open(csvdir + '%s.csv' % file, 'r') as d:
+with open(csv_dir + '%s.csv' % file, 'r') as d:
     reader = csv.reader(d, delimiter='\t')
     z = list(reader)
     STA = False
@@ -74,7 +74,7 @@ def count_seen():
 count_seen()
 
 # GET DERANDED DEVICES FROM CAP:
-p = subprocess.check_output(r"D:\Installs\WinDump.exe -ten -r C:\Users\Bilal\Desktop\whereabouts\%s.cap (wlan addr1 22:22:22:22:22:22) or (wlan src 22:22:22:22:22:22)" % file, stderr=subprocess.STDOUT).decode('utf-8')
+p = subprocess.check_output(windump_path + f' -ten -r ./cap/{file}.cap (wlan addr1 22:22:22:22:22:22) or (wlan src 22:22:22:22:22:22)', stderr=subprocess.STDOUT).decode('utf-8')
 
 responses = int(p.count('SA:22:22:22:22:22:22')/2)
 

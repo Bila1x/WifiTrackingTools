@@ -8,19 +8,6 @@ import tkinter
 import datetime
 from textbox import textbox
 
-before = time.time()
-root = tkinter.Tk()
-root.withdraw()
-
-MACS = pyperclip.paste().upper().splitlines()
-
-if not os.path.isfile('./pyoui-27-02-2019.txt'):
-    print('oui file does not exist')
-    quit()
-
-mtime = os.path.getmtime('./pyoui-27-02-2019.txt')
-mtime = datetime.datetime.fromtimestamp(mtime)
-
 
 def get_macs(MACS):
     result = str()
@@ -44,6 +31,19 @@ result = get_macs(MACS)
 result = result.replace('\r','')
 
 if __name__ == '__main__':
+    before = time.time()
+    root = tkinter.Tk()
+    root.withdraw()
+
+    MACS = pyperclip.paste().upper().splitlines()
+
+    if not os.path.isfile('./pyoui-27-02-2019.txt'):
+        print('oui file does not exist')
+        quit()
+
+    mtime = os.path.getmtime('./pyoui-27-02-2019.txt')
+    mtime = datetime.datetime.fromtimestamp(mtime)
+    
     if len(sys.argv) == 1:
         print(result)
         print('{} ouis in {} seconds'.format(result.count('\n'), time.time() - before))

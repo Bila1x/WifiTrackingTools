@@ -21,7 +21,7 @@ Pack up your backpack with a Raspberry Pi, powered by a battery bank, and take a
 ||     || <-------------- |              ++---++               |                         |
 |+-----+|    Notify       |              |                     |                         |
 +-------+    Show stats   +---+   +------+                     +---+                +----+
-   Phone                  |CAP|   |tshark|                     |CSV|                | DB |
+  Phone                   |CAP|   |tshark|                     |CSV|                | DB |
                           +---+---+------+                     +---+----------------+----+
           ++------------++        ^
           || -        + ||        |
