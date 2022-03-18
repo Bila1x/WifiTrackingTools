@@ -4,7 +4,7 @@ ___
 This project is a demonstration of wifi tracking in action, in a wardriving manner, using a Raspberry Pi for packet capture, and analyzing data for tracking wifi devices.  
 MAC address anonymization was introduced as an anecdote to tracking, but it has its limitations and can be bypassed (to an extent) as demonstrated in this project.  
 
-Pack up your backpack with a Raspberry Pi, powered by a battery bank, and take a walk around town, in different locations, you'll be surprised to encounter a device in both locations. It's a small world!.  
+Pack up your backpack with a Raspberry Pi, powered by a battery bank, and take a walk around town in two different locations, you'll be surprised to encounter a device in both locations. It's a small world!.  
 
 ```
                                              \   /
@@ -123,6 +123,9 @@ ___
 
 > **Q: Why use bluetooth tethering instead of a wifi hotspot using the embedded wifi interface to connect my phone?**  
 > A: Bluetooth tethering saves energy. Moreover, a wifi hotspot will add unneeded noise to your capture file.  
+
+> **Q: I keep seeing this device, am I being followed?**  
+> No. Just no.
 
 > **Q: Is this legal?**  
 > A: This is meant for demonstration purposes only. Check your local laws. Capturing data **passively** is allowed in some jurisdictions.  
