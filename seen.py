@@ -15,11 +15,11 @@ class Seen:
 
 way = ['oui-2017-12-17-wayback', 'oui-2015-01-23-wayback', 'oui-2015-01-28-wayback', 'oui-2015-02-07-wayback', 'oui-2015-02-11-wayback', 'oui-2015-02-19-wayback', 'oui-2015-03-03-wayback', 'oui-2015-03-07-wayback', 'oui-2015-03-09-wayback', 'oui-2015-03-10-wayback', 'oui-2015-03-13-wayback', 'oui-2015-04-04-wayback', 'oui-2015-04-05-wayback', 'oui-2015-04-07-wayback', 'oui-2015-04-11-wayback', 'oui-2015-04-13-wayback', 'oui-2015-04-18-wayback', 'oui-2015-04-23-wayback', 'oui-2015-04-25-wayback', 'oui-2015-05-03-wayback', 'oui-2015-05-12-wayback', 'oui-2015-05-23-wayback', 'oui-2015-05-24-wayback', 'oui-2015-05-31-wayback', 'oui-2015-06-13-wayback', 'oui-2015-07-23-wayback', 'oui-2015-07-31-wayback', 'oui-2015-08-11-wayback', 'oui-2015-08-12-wayback', 'oui-2015-08-16-wayback', 'oui-2015-08-18-wayback', 'oui-2015-09-27-wayback', 'oui-2015-10-07-wayback', 'oui-2015-10-12-wayback', 'oui-2015-10-25-wayback', 'oui-2015-10-31-wayback', 'oui-2015-11-15-wayback', 'oui-2015-12-22-wayback', 'oui-2016-01-16-wayback', 'oui-2016-03-02-wayback', 'oui-2016-03-15-wayback', 'oui-2016-04-03-wayback', 'oui-2016-04-12-wayback', 'oui-2016-05-02-wayback', 'oui-2016-05-19-wayback', 'oui-2016-05-31-wayback', 'oui-2016-06-17-wayback', 'oui-2016-06-28-wayback', 'oui-2016-07-18-wayback', 'oui-2016-07-22-wayback', 'oui-2016-07-27-wayback', 'oui-2016-08-05-wayback', 'oui-2016-08-06-wayback', 'oui-2016-08-26-wayback', 'oui-2016-09-28-wayback', 'oui-2016-11-16-wayback', 'oui-2016-11-26-wayback', 'oui-2017-03-26-wayback', 'oui-2017-05-23-wayback', 'oui-2017-06-02-wayback', 'oui-2017-06-17-wayback', 'oui-2017-07-14-wayback', 'oui-2017-08-13-wayback', 'oui-2017-08-21-wayback', 'oui-2017-09-10-wayback', 'oui-2017-09-16-wayback']
 way.sort(); way.reverse()
-conn = connect('C:\\Users\\Bilal\\Desktop\\whereabouts\\db.db')
-conn = connect(r'O:\whereabouts\hopecsv\whereabouts.db')
+# conn = connect('C:\\Users\\Bilal\\Desktop\\whereabouts\\db.db')
+conn = connect('./whereabouts.db')
 conn.text_factory = bytes
 cur = conn.cursor()
-conn2 = connect('C:\\Users\\Bilal\\Desktop\\whereabouts\\wayback - Copy.db')
+conn2 = connect('../wayback - Copy.db')
 cur2 = conn2.cursor()
 
 def err():

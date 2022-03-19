@@ -22,13 +22,13 @@ def get_macs(MACS):
         else:
             result += '\n'
     return result
-result = get_macs(MACS)
+
 #print(time.time() - before)
 #messagebox.showinfo("MACresolver", time.time() - before)
 #root.clipboard_clear()
 #root.clipboard_append('ass')
 
-result = result.replace('\r','')
+
 
 if __name__ == '__main__':
     before = time.time()
@@ -43,6 +43,9 @@ if __name__ == '__main__':
 
     mtime = os.path.getmtime('./pyoui-27-02-2019.txt')
     mtime = datetime.datetime.fromtimestamp(mtime)
+
+    result = get_macs(MACS)
+    result = result.replace('\r', '')
     
     if len(sys.argv) == 1:
         print(result)

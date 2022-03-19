@@ -7,6 +7,7 @@ import re
 from sqlite3 import connect
 from seen import Seen
 import mostLines
+import os
 
 before = time.time()
 
@@ -16,12 +17,15 @@ print(file)
 
 # csvdir = r'C:\Users\Bilal\Desktop\whereabouts\\'
 # dbdir = 'C:\\Users\\Bilal\\Desktop\\whereabouts\\db.db'
-csv_dir = r'O:\whereabouts\hopecsv\\'
-db_dir = 'O:\whereabouts\hopecsv\whereabouts.db'
-windump_path = '.\WinDump.exe'
+csv_dir = r'./csv/'
+db_dir = './whereabouts.db'
+if os.name == 'nt':
+    windump_path = './WinDump.exe'
+else:
+    windump_path = 'tcpdump'
 
 # Get prone OUI list
-with open(r'c:\users\bilal\desktop\whereabouts\scripts\proneOUIs.txt', 'r') as pr:
+with open('./proneOUIs.txt', 'r') as pr:
     prone = pr.read().splitlines()
 
 # CONNECT TO DB
@@ -30,7 +34,7 @@ conn.text_factory = bytes
 cur = conn.cursor()
 
 # GET LIST OF ALL DEVICES:
-with open(csv_dir + '%s.csv' % file, 'r') as d:
+with open(csv_dir + f'{file}.csv', 'r') as d:
     reader = csv.reader(d, delimiter='\t')
     z = list(reader)
     STA = False
@@ -56,7 +60,7 @@ print('actual devices: {}'.format(count))
 
 def count_seen():
     new = 0
-    with open(r'C:\Users\Bilal\Desktop\whereabouts\\scripts\\pyoui-27-02-2019.txt', 'r') as f:
+    with open('./pyoui-27-02-2019.txt', 'r') as f:
         dd = f.readlines()
         ouis = dict()
         for line in dd:
@@ -64,7 +68,7 @@ def count_seen():
 
     for device in devices:
         if device[:8] in ouis:
-            cur.execute("SELECT field1 FROM Joined WHERE field1 = '" + device + "'")
+            cur.execute(f"SELECT field1 FROM Joined WHERE field1 = '{device}'")
             try: c = cur.fetchall()
             except: print('ERROR COUNTING SEEN DEVICES'); break
             if len(c) != 1:
@@ -74,7 +78,11 @@ def count_seen():
 count_seen()
 
 # GET DERANDED DEVICES FROM CAP:
-p = subprocess.check_output(windump_path + f' -ten -r ./cap/{file}.cap (wlan addr1 22:22:22:22:22:22) or (wlan src 22:22:22:22:22:22)', stderr=subprocess.STDOUT).decode('utf-8')
+try:
+    p = subprocess.check_output(windump_path + f' -ten -r ./cap/{file}.cap (wlan addr1 22:22:22:22:22:22) or (wlan src 22:22:22:22:22:22)', stderr=subprocess.STDOUT).decode('utf-8')
+except FileNotFoundError:
+    print(f'ERROR: {windump_path} not found')
+    quit(1)
 
 responses = int(p.count('SA:22:22:22:22:22:22')/2)
 
