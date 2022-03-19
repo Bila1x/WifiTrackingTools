@@ -25886,4 +25886,105 @@ C4:F0:EC|Fiberhome Telecommunication Technologies Co.,LTD
 54:47:D3|TSAT AS
 E0:5A:9F|IEEE Registration Authority
 0C:E0:41|iDruide
-98:49:E1|Boein                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+98:49:E1|Boeing Defence Australia
+BC:CF:4F|Zyxel Communications Corporation
+00:2F:5C|Cisco Systems, Inc
+F4:6F:4E|Echowell
+2C:73:A0|Cisco Systems, Inc
+2C:01:B5|Cisco Systems, Inc
+28:B4:FB|Sprocomm Technologies CO.,LTD.
+E4:5D:37|Juniper Networks
+A8:6D:5F|Raisecom Technology CO., LTD
+CC:2C:83|DarkMatter L.L.C
+00:50:79|Private
+D0:EC:35|Cisco Systems, Inc
+50:3E:7C|LeiShen Intelligent  System Co.Ltd
+20:0D:B0|Shenzhen Four Seas Global Link Network Technology Co., Ltd.
+44:B9:94|Douglas Lighting Controls
+D8:55:75|Samsung Electronics Co.,Ltd
+D4:11:A3|Samsung Electronics Co.,Ltd
+64:89:F1|Samsung Electronics Co.,Ltd
+04:BA:8D|Samsung Electronics Co.,Ltd
+48:95:07|GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD
+A8:9C:ED|Xiaomi Communications Co Ltd
+6C:A6:04|ARRIS Group, Inc.
+C0:41:21|Nokia
+A0:BD:1D|Zhejiang Dahua Technology Co., Ltd.
+94:F7:AD|Juniper Networks
+88:CC:45|Skyworth Digital Technology(Shenzhen) Co.,Ltd
+C8:8F:26|Skyworth Digital Technology(Shenzhen) Co.,Ltd
+70:85:40|Skyworth Digital Technology(Shenzhen) Co.,Ltd
+0C:11:05|AKUVOX (XIAMEN) NETWORKS CO., LTD
+5C:C6:D0|Skyworth Digital Technology(Shenzhen) Co.,Ltd
+7C:61:66|Amazon Technologies Inc.
+98:FA:9B|LCFC(HeFei) Electronics Technology co., ltd
+00:FD:22|Cisco Systems, Inc
+44:B2:95|Sichuan AI-Link Technology Co., Ltd.
+94:24:E1|Alcatel-Lucent Enterprise
+C4:2A:D0|Apple, Inc.
+E0:89:7E|Apple, Inc.
+10:30:25|Apple, Inc.
+C0:10:B1|HMD Global Oy
+A0:28:ED|HMD Global Oy
+6C:72:20|D-Link International
+90:8D:78|D-Link International
+78:54:2E|D-Link International
+18:0F:76|D-Link International
+74:DA:DA|D-Link International
+48:EE:0C|D-Link International
+B0:E7:1D|Shanghai Maigantech Co.,Ltd
+88:97:46|Sichuan AI-Link Technology Co., Ltd.
+14:52:90|KNS Group LLC (YADRO Company)
+8C:79:F5|Samsung Electronics Co.,Ltd
+48:F8:DB|HUAWEI TECHNOLOGIES CO.,LTD
+2C:58:E8|HUAWEI TECHNOLOGIES CO.,LTD
+A4:97:5C|VTech Telecommunications Ltd.
+50:78:B3|zte corporation
+24:6F:28|Espressif Inc.
+C4:B3:6A|Cisco Systems, Inc
+F8:BB:BF|eero inc.
+60:5F:8D|eero inc.
+00:07:7C|Westermo Network Technologies AB
+90:4D:C3|Flonidan A/S
+30:EA:26|Sycada BV
+9C:49:7F|Integrated Device Technology (Malaysia) Sdn. Bhd.
+78:8C:77|LEXMARK INTERNATIONAL, INC.
+E0:02:A5|ABB Robotics
+F8:9A:78|HUAWEI TECHNOLOGIES CO.,LTD
+9C:1E:95|Actiontec Electronics, Inc
+10:78:5B|Actiontec Electronics, Inc
+00:26:62|Actiontec Electronics, Inc
+0C:61:27|Actiontec Electronics, Inc
+A0:A3:E2|Actiontec Electronics, Inc
+4C:8B:30|Actiontec Electronics, Inc
+00:22:AF|Safety Vision, LLC
+C8:B4:22|ASKEY COMPUTER CORP
+40:8B:07|Actiontec Electronics, Inc
+00:7F:28|Actiontec Electronics, Inc
+00:18:01|Actiontec Electronics, Inc
+00:15:05|Actiontec Electronics, Inc
+00:0F:B3|Actiontec Electronics, Inc
+84:E8:92|Actiontec Electronics, Inc
+10:93:97|ARRIS Group, Inc.
+10:3D:3E|China Mobile Group Device Co.,Ltd.
+64:CC:22|Arcadyan Corporation
+38:F3:2E|Skullcandy
+18:46:44|Home Control Singapore Pte Ltd
+E8:E8:B7|Murata Manufacturing Co., Ltd.
+80:20:DA|Sagemcom Broadband SAS
+F8:B7:97|NEC Platforms, Ltd.
+B0:AA:D2|Sichuan tianyi kanghe communications co., LTD
+E8:C4:17|Fiberhome Telecommunication Technologies Co.,LTD
+48:5D:EB|Just Add Power
+E8:A4:C1|Deep Sea Electronics Ltd
+B0:70:0D|Nokia
+DC:8C:37|Cisco Systems, Inc
+70:2E:80|DIEHL Connectivity Solutions
+1C:3A:60|Ruckus Wireless
+7C:50:DA|Private
+BC:9F:E4|Aruba, a Hewlett Packard Enterprise Company
+00:50:C6|LOOP TELECOMMUNICATION INTERNATIONAL, INC.
+B0:A6:F5|Xaptum, Inc.
+E0:CB:1D|Private
+48:77:46|Calix Inc.
+00:0B:E4|Hosiden Corporation
