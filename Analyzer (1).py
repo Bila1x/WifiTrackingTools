@@ -4,7 +4,6 @@ from MACresolver import get_macs
 import subprocess
 import re
 from sqlite3 import connect
-from seen import Seen
 import mostLines
 import os
 from db import csv_digest
@@ -15,7 +14,7 @@ before = time.time()
 
 fake_ap_mac = '22:22:22:22:22:22'
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='Analyze a capture file')
 parser.add_argument('cap_file', help='capture file path')
 args = parser.parse_args()
 
