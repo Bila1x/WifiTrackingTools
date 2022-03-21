@@ -1,6 +1,5 @@
 import csv
 import time
-import datetime
 from MACresolver import get_macs
 import subprocess
 import re
@@ -8,16 +7,30 @@ from sqlite3 import connect
 from seen import Seen
 import mostLines
 import os
+from db import csv_digest
+import argparse
+import configparser
 
 before = time.time()
 
-file = r'1dec'
-devices = set()
-print(file)
+fake_ap_mac = '22:22:22:22:22:22'
 
-# csvdir = r'C:\Users\Bilal\Desktop\whereabouts\\'
-# dbdir = 'C:\\Users\\Bilal\\Desktop\\whereabouts\\db.db'
-csv_dir = r'./csv/'
+parser = argparse.ArgumentParser()
+parser.add_argument('cap_file', help='capture file path')
+args = parser.parse_args()
+
+cap_file = args.cap_file
+csv_file = os.path.splitext(os.path.basename(cap_file))[0] + '.csv'
+
+if not os.path.exists(cap_file):
+    print(f'Capture file "{cap_file}" does not exist!')
+    quit(1)
+if not os.path.exists(csv_file):
+    print(f'CSV file of "{cap_file}" does not exist in "./csv/". Run indexer.py on the capture file first.')
+    quit(1)
+
+csv_dir = './csv/'
+devices = set()
 db_dir = './whereabouts.db'
 if os.name == 'nt':
     windump_path = './WinDump.exe'
@@ -25,7 +38,7 @@ else:
     windump_path = 'tcpdump'
 
 # Get prone OUI list
-with open('./proneOUIs.txt', 'r') as pr:
+with open('./proneOUIs.txt', 'r', encoding='utf-8') as pr:
     prone = pr.read().splitlines()
 
 # CONNECT TO DB
@@ -33,56 +46,74 @@ conn = connect(db_dir)
 conn.text_factory = bytes
 cur = conn.cursor()
 
+# Get CSVs added to db
+with open(csv_dir + 'db_csvs.txt', 'r') as a:
+    added_csvs = a.read().splitlines()
+
 # GET LIST OF ALL DEVICES:
-with open(csv_dir + f'{file}.csv', 'r') as d:
+with open(csv_dir + csv_file, 'r', encoding='utf-8') as d:
     reader = csv.reader(d, delimiter='\t')
     z = list(reader)
-    STA = False
-    for device in z:
-        if len(device) and 'Station' in device[0]:
-            STA = True
-        if len(device) and device[0] == 'Undefined':
-            break
-        if STA and len(device):# and device[4].isdigit() and int(device[4]) > 0:# and int(device[3]) > -80:
-            devices.add(device[0].upper())
+    d.seek(0)
+    content = d.read()
+    if csv_digest(content) in added_csvs:
+        print(f'{csv_file} is added to database')
+        in_db = True
+    else:
+        print(f'{csv_file}.csv is not added to database')
+        in_db = False
+    del content
 
-print('total devices: {}'.format(len(devices)))
-# FILTER OUT NON-RANDOM DEVICES:
+STA = False
+for device in z:
+    if len(device) and 'Station' in device[0]:
+        STA = True
+    if len(device) and device[0] == 'Undefined':
+        break
+    if STA and len(device):# and device[4].isdigit() and int(device[4]) > 0:# and int(device[3]) > -80:
+        devices.add(device[0].upper())
+
+print('\n# of devices (incl. randomized MACs): {}'.format(len(devices)))
+
+# FILTER OUT DEVICES WITH NON-RANDOM MACS:
 res = get_macs(devices).splitlines()
-count = 0
+actual = 0
 pronecount = 0
 for line in res:
     if line:
-        count +=1
+        actual +=1
         if line in prone:
             pronecount += 1
-print('actual devices: {}'.format(count))
+print('# of actual devices: {}'.format(actual))
 
 def count_seen():
-    new = 0
-    with open('./pyoui-27-02-2019.txt', 'r') as f:
+    unique = 0
+    with open('./create_ouis.csv', 'r', encoding='utf-8') as f:
         dd = f.readlines()
         ouis = dict()
         for line in dd:
-            ouis[line[:8]] = line[9:].strip().upper()
+            entry = line.split('\t')
+            ouis[entry[0]] = entry[1]
 
     for device in devices:
         if device[:8] in ouis:
             cur.execute(f"SELECT field1 FROM Joined WHERE field1 = '{device}'")
-            try: c = cur.fetchall()
+            try: db_hits = cur.fetchall()
             except: print('ERROR COUNTING SEEN DEVICES'); break
-            if len(c) != 1:
-                new += 1
+            if len(db_hits) <= in_db:
+                unique += 1
     conn.close()
-    print('Unique devices: {} ({}% from actual devices)'.format(new, round(new/count*100)))
+    print(f'Unique devices to database: {unique} ({round(unique / actual * 100)}% first seen devices)')
 count_seen()
 
 # GET DERANDED DEVICES FROM CAP:
 try:
-    p = subprocess.check_output(windump_path + f' -ten -r ./cap/{file}.cap (wlan addr1 22:22:22:22:22:22) or (wlan src 22:22:22:22:22:22)', stderr=subprocess.STDOUT).decode('utf-8')
+    p = subprocess.check_output(windump_path + f' -ten -r {cap_file} (wlan addr1 {fake_ap_mac}) or (wlan src {fake_ap_mac})', stderr=subprocess.STDOUT).decode('utf-8')
 except FileNotFoundError:
-    print(f'ERROR: {windump_path} not found')
+    print(f'ERROR: "{windump_path}" not found')
     quit(1)
+except:
+    print(f'ERROR: "{windump_path}" failed to run. Did you install the dependencies?')
 
 responses = int(p.count('SA:22:22:22:22:22:22')/2)
 
@@ -92,9 +123,9 @@ SSIDs = {}
 ack = 0
 deranded = []
 for line in p:
-    if 'st ' in line:
+    if 'Request ' in line:
         a = re.search('SA:(..:..:..:..:..:..)', line)
-        b = re.search('st \((.*)\)', line)
+        b = re.search('Request \((.*)\)', line)
         c = re.search('DA:22:22:22:22:22:22', line)
         add = a.group(1) + '-' + b.group(1)
         if add not in unique and c:
@@ -108,22 +139,45 @@ for line in p:
     elif 'Acknowledgment' in line:
         ack += 1
 
-
-# print('Responses sent: {}'.format(responses))
 if responses:
-    print('Acks/Responses received: {}/{} ({}%)'.format(ack, responses, round(ack/responses*100)))
+    print('\nAcknowledgements received / Probe Responses sent: {}/{} ({}%)'
+          .format(ack, responses, round(ack/responses*100)))
 else:
-    print('no Responses sent!')
-if count and responses:
-    print('deranded devices: {} ({}% from total devices) ({}% from actual devices) ({}% from total responses) ({}% prone OUIs to derand)'
-      .format(len(unique), round(len(unique) / len(devices) * 100, 2), round(len(unique) / count * 100, 2), round(len(unique) / responses * 100, 3), round(len(unique) / pronecount * 100, 2)))
+    print('\nAcknowledgements received / Probe Responses sent: 0/0 (0%)')
+    print('No responses found. Either no devices probed for your SSID(s),'
+          ' or deanonymize.py did not run during the capture.')
 
-for item in reversed(sorted(SSIDs.items(), key= lambda x: x[1])):
-    print([item[1], item[0], '{}%'.format(round(item[1]/len(unique)*100, 1))])
+if actual and responses:
+    print(f'De-anomymized devices: {len(unique)}\n\t'
+          f'{round(len(unique) / actual * 100, 2)}% from actual devices\n\t'
+          f'{round(len(unique) / responses * 100, 3)}% from total responses\n\t'
+          f'{round(len(unique) / pronecount * 100, 2)}% devices prone to de-anonymization')
 
-print('\nDeranded devices:')
+print('\nResponses to fake AP:')
+if SSIDs.items():
+    print('┌─' + '─' * 10 + '┬─' + '─' * 30 + '┬─' + '─' * 5 + '─┐')
+    print(f'│ {"Responses": <10}│ {"SSID": <30}│ {"%": <5} │')
+    for x in reversed(sorted(SSIDs.items(), key= lambda x: x[1])):
+        line = f'│ {x[1]: <10}│ {x[0]: <30}│ {round(int(x[1])/len(unique)*100, 1): <5} │'
+        print('├─' + '─' * 10 + '┼─' + '─' * 30 + '┼─' + '─' * 5 + '─┤')
+        print(line)
+    print('└─' + '─' * 10 + '┴─' + '─' * 30 + '┴─' + '─' * 5 + '─┘')
+else:
+    print('No responses found. Either no devices probed for your SSID(s),'
+          ' or deanonymize.py did not run during the capture.')
+
+print('\nDe-anomymized devices stats:')
 ll = get_macs(deranded)
-for line in reversed(sorted(mostLines.rows(ll.splitlines(), 1))):
-    print('{} ({}% of this OUI)'.format(line, round(line[0]/res.count(line[1])*100, 3)))
+if ll:
+    print('┌─' + '─' * 10 + '┬─' + '─' * 35 + '┬─' + '─' * 5 + '─┬─' + '─' * 9 + '┐')
+    print(f'│ {"Devices": <10}│ {"OUI": <35}│ {"%": <5} │ {"% of OUI": <9}│')
+    for x in reversed(sorted(mostLines.rows(ll.splitlines(), 1))):
+        line = f'│ {x[0]: <10}│ {x[1]: <35}│ {x[2]: <5} │ {round(x[0] / res.count(x[1]) * 100, 2): <9}│'
+        print('├─' + '─' * 10 + '┼─' + '─' * 35 + '┼─' + '─' * 5 + '─┼─' + '─' * 9 + '┤')
+        print(line)
+    print('└─' + '─' * 10 + '┴─' + '─' * 35 + '┴─' + '─' * 5 + '─┴─' + '─' * 9 + '┘')
+else:
+    print('No responses found. Either no devices probed for your SSID(s),'
+          ' or deanonymize.py did not run during the capture.')
 
-print('time to run: {}'.format(time.time() - before))
+print('\nDone in: {}s'.format(round(time.time() - before, 2)))

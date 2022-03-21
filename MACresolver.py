@@ -11,11 +11,13 @@ from textbox import textbox
 
 def get_macs(MACS):
     result = str()
-    with open('./pyoui-27-02-2019.txt', 'r') as f:
+    with open('./create_ouis.csv', 'r', encoding='utf-8') as f:
         dd = f.readlines()
         ouis = dict()
         for line in dd:
-            ouis[line[:8]] = line[9:].strip().upper()
+            entry = line.split('\t')
+            ouis[entry[0]] = entry[1]
+            # ouis[line[:8]] = line[9:].strip().upper()
     for mac in MACS:
         if mac[:8] in ouis:
             result += ouis[mac[:8]] + '\n'
@@ -37,11 +39,11 @@ if __name__ == '__main__':
 
     MACS = pyperclip.paste().upper().splitlines()
 
-    if not os.path.isfile('./pyoui-27-02-2019.txt'):
+    if not os.path.isfile('./create_ouis.csv'):
         print('oui file does not exist')
         quit()
 
-    mtime = os.path.getmtime('./pyoui-27-02-2019.txt')
+    mtime = os.path.getmtime('./create_ouis.csv')
     mtime = datetime.datetime.fromtimestamp(mtime)
 
     result = get_macs(MACS)
