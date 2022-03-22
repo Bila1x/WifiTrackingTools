@@ -1,9 +1,10 @@
 import Derand
-from PyQt4 import QtGui
+from PyQt5 import QtGui
+from PyQt5.QtWidgets import QApplication, QWidget
 import sys
 
-app = QtGui.QApplication(sys.argv)
-window = QtGui.QWidget()
+app = QApplication(sys.argv)
+window = QWidget()
 window.setGeometry(200,200,500,300)
 dname = 'Derand-15mar'
 window.setWindowTitle('Derand')

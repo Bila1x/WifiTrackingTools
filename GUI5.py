@@ -6,7 +6,9 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt4 import QtCore, QtGui
+# from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtWidgets import QApplication, QMainWindow
 import Derand
 import time
 
@@ -234,4 +236,90 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", "eq1", None))
         self.label_7.setText(_translate("MainWindow", "MaxAV:", None))
         self.label_2.setText(_translate("MainWindow", "eq2", None))
-        self.label_9.setText(_translate("MainWindow", "MaxDb:", None))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+        self.label_9.setText(_translate("MainWindow", "MaxDb:", None))
+        self.label_3.setText(_translate("MainWindow", "eq3", None))
+        self.flagSwitch.setText(_translate("MainWindow", "Consider flags", None))
+        self.printDesignated.setText(_translate("MainWindow", "ShowAppl", None))
+        self.Derand.setText(_translate("MainWindow", "&Derand", None))
+
+    def showdialog(self):
+        msg = QtGui.QMessageBox()
+        msg.setIcon(QtGui.QMessageBox.Critical)
+
+        msg.setText("cap File not found!")
+        #msg.setInformativeText("This is additional information")
+        msg.setWindowTitle("Error")
+        #msg.setDetailedText("The details are as follows:")
+        retval = msg.exec_()
+
+    def on_click(self):
+        self.Derand.setEnabled(False)
+        Derand.showAppl = self.printDesignated.isChecked()
+        self.Result.setPlainText('list out of range!')
+        Derand.dname = "Derand-" + self.csvDir.text()
+        try:
+            Derand.MAC = self.start.text().lower()
+        except:
+            return
+        #Derand.showAppl = int(self.???.text())
+        print(Derand.MAC)
+        Derand.MaxAV = int(self.MaxAV.text())
+        Derand.MaxSNgap = int(self.MaxSNgap.text())
+        if not self.flagSwitch.isChecked():
+            Derand.flags = ''
+        elif self.flg.text():
+            Derand.flags = self.flg.text()
+        else:
+            Derand.flags = Derand.dlist[Derand.start - 1][4]
+        Derand.MaxDb = int(self.MaxDb.text())
+        Derand.after = ''
+        Derand.eq1 = self.eq1.value()
+        Derand.eq2 = self.eq2.value()
+        Derand.eq3 = self.eq3.value()
+        Derand.magic()
+        if Derand.start > len(Derand.dlist):
+            return
+        self.Result.setEnabled(True)
+        self.Result.setPlainText(Derand.toGUI)
+        self.Derand.setEnabled(True)
+        #print(Derand.result)
+
+    def generate(self):
+        Derand.cap = self.csvDir.text()
+        Derand.dname = "Derand-" + self.csvDir.text()
+        Derand.makeDlist()
+        if not Derand.capSize:
+            #self.progressBar.setValue(100)
+            self.showdialog()
+            return
+        #self.progressBar.setValue(0)
+        if type(Derand.p) is not int:
+            progTime = time.time()
+            while True:
+                if Derand.p.poll() is not None:
+                    break
+                self.progressBar.setValue((time.time() - progTime) / (0.55 * Derand.capSize) * 500)
+                app.processEvents()
+                time.sleep(0.1)
+            while Derand.p.poll() is None:
+                app.processEvents()
+                time.sleep(0.1)
+
+        self.progressBar.setValue(0)
+        Derand.openShark()
+        self.tableView.setEnabled(True)
+        self.model.clear()
+        for row in Derand.dlist:
+            row[2] = time.strftime('%H:%M:%S', time.localtime(float(row[2])))
+            items = [QtGui.QStandardItem(cell) for cell in row]
+            self.model.appendRow(items)
+        #print(Derand.capSize)
+
+if __name__ == "__main__":
+    import sys
+    app = QApplication(sys.argv)
+    MainWindow = QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())

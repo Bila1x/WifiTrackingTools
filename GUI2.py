@@ -233,4 +233,65 @@ class Ui_MainWindow(object):
         self.Derand_csv.setTitle(_translate("MainWindow", "Derand csv", None))
         self.Derand_Box.setTitle(_translate("MainWindow", "Derand", None))
         self.flagSwitch.setText(_translate("MainWindow", "Consider flags", None))
-        self.Derand.setText(_translate("MainWindow", "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+        self.Derand.setText(_translate("MainWindow", "&Derand", None))
+        self.printDesignated.setText(_translate("MainWindow", "ShowAppl", None))
+        self.label_4.setText(_translate("MainWindow", "File:   ", None))
+        self.Generate.setText(_translate("MainWindow", "Generate", None))
+        self.label_5.setText(_translate("MainWindow", "Start:", None))
+        self.label_6.setText(_translate("MainWindow", "Flags:", None))
+        self.label_8.setText(_translate("MainWindow", "MaxSNgap:", None))
+        self.label.setText(_translate("MainWindow", "eq1", None))
+        self.label_7.setText(_translate("MainWindow", "MaxAV:", None))
+        self.label_2.setText(_translate("MainWindow", "eq2", None))
+        self.label_9.setText(_translate("MainWindow", "MaxDb:", None))
+        self.label_3.setText(_translate("MainWindow", "eq3", None))
+
+    def on_click(self):
+        #textbval = self.Derand.text()
+        Derand.dname = "Derand-" + self.csvDir.text()
+        Derand.start = int(self.start.text())
+        #Derand.showAppl = int(self.???.text())
+        Derand.MaxAV = int(self.MaxAV.text())
+        Derand.MaxSNgap = int(self.MaxSNgap.text())
+        Derand.flags = self.flg.text()
+        Derand.MaxDb = int(self.MaxDb.text())
+        Derand.after = ''
+        Derand.eq1 = self.eq1.value()
+        Derand.eq2 = self.eq2.value()
+        Derand.eq3 = self.eq3.value()
+        Derand.magic()
+        self.Result.setEnabled(True)
+        self.Result.setPlainText(Derand.toGUI)
+        #print(Derand.result)
+
+    def generate(self):
+        Derand.cap = self.csvDir.text()
+        Derand.dname = "Derand-" + self.csvDir.text()
+        Derand.makeDlist()
+        self.progressBar.setValue(0)
+        if type(Derand.p) is not int:
+            progTime = time.time()
+            while True:
+                if Derand.p.poll() is not None:
+                    break
+                self.progressBar.setValue((time.time() - progTime) / (0.50 * Derand.capSize) * 100)
+                app.processEvents()
+                time.sleep(0.1)
+            while Derand.p.poll() is None:
+                app.processEvents()
+                time.sleep(0.1)
+
+        self.progressBar.setValue(0)
+        Derand.openShark()
+        self.csvFile.setEnabled(True)
+        self.csvFile.setPlainText(Derand.dlist)
+        print(Derand.capSize)
+
+if __name__ == "__main__":
+    import sys
+    app = QtGui.QApplication(sys.argv)
+    MainWindow = QtGui.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())
