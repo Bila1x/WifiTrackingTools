@@ -9,7 +9,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
 import Derand
 import time
 
@@ -35,6 +35,7 @@ class Ui_MainWindow(object):
         self.Result.setSizePolicy(sizePolicy)
         self.Result.setMinimumSize(QtCore.QSize(0, 300))
         font = QtGui.QFont()
+        font.setFamily("Monospace")
         font.setPointSize(14)
         self.Result.setFont(font)
         self.Result.setPlainText("")
@@ -221,8 +222,8 @@ class Ui_MainWindow(object):
         self.Derand.setText(_translate("MainWindow", "&Derand"))
 
     def showdialog(self):
-        msg = QtGui.QMessageBox()
-        msg.setIcon(QtGui.QMessageBox.Critical)
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Critical)
 
         msg.setText("cap File not found!")
         #msg.setInformativeText("This is additional information")
@@ -234,7 +235,7 @@ class Ui_MainWindow(object):
         self.Derand.setEnabled(False)
         Derand.showAppl = self.printDesignated.isChecked()
         self.Result.setPlainText('list out of range!')
-        Derand.dname = "Derand-" + self.csvDir.text()
+        Derand.dname = self.csvDir.text()
         try:
             Derand.MAC = self.start.text().lower()
         except:
@@ -247,18 +248,21 @@ class Ui_MainWindow(object):
             Derand.flags = ''
         elif self.flg.text():
             Derand.flags = self.flg.text()
-        else:
-            Derand.flags = Derand.dlist[Derand.start - 1][4]
+        # else:
+        #     Derand.flags = Derand.dlist[Derand.start - 1][4]
         Derand.MaxDb = int(self.MaxDb.text())
         Derand.after = ''
         Derand.eq1 = self.eq1.value()
         Derand.eq2 = self.eq2.value()
         Derand.eq3 = self.eq3.value()
-        Derand.magic()
-        if Derand.start > len(Derand.dlist):
-            return
+        # try:
+        magic_fail = Derand.magic()
+        # if not magic_fail:
+        #     if Derand.start > len(Derand.dlist):
+        #         return
         self.Result.setEnabled(True)
-        self.Result.setPlainText(Derand.toGUI)
+        if not magic_fail:
+            self.Result.setPlainText(Derand.toGUI)
         self.Derand.setEnabled(True)
         #print(Derand.result)
 
