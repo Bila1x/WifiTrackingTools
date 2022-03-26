@@ -1,6 +1,8 @@
 import csv
 import time as timer
 from math import log10
+#from PyQt4 import QtGui
+import sys
 import os
 import subprocess
 import datetime
@@ -22,40 +24,40 @@ global start
 start = 4924  # 8379
 isStartFound = False
 eq1 = 26; eq2 = 50; eq3 = 60
-capSize = 0
-
 
 def makeDlist():
     global p
-    # global capSize
+    global capSize
     p = 1
-    if not os.path.isfile(f'./Derand/{cap}.xls'):
-        #41s per 100MB
-        p = subprocess.Popen(f'"C:/Program Files/Wireshark/tshark.exe" -r {capsDir}{cap}.cap ' +
-                             f'-Y "wlan.sa_resolved contains "Apple" || (not wlan.sa_resolved contains "_" && wlan.fc.type_subtype == 4)" -T fields ' +
-                             f'-e wlan.sa_resolved -e wlan.seq -e frame.time_epoch -e wlan_radio.signal_dbm -e wlan.tag.length > ./Derand/{cap}.xls', shell=True)
-        #openShark()
     try:
-        return os.path.getsize(capsDir + '%s.cap' % cap) >> 20
+        capSize = os.path.getsize(capsDir + '%s.cap' % cap) >> 20
     except FileNotFoundError:
+        capSize = 0
         return
 
+    if os.path.isfile('./Derand/%s.xls' % dname) == False:
+        #41s per 100MB
+        p = subprocess.Popen(r'"tshark.exe" -r ' + capsDir + cap + '.cap -Y "wlan.sa_resolved contains "Apple" || (not wlan.sa_resolved contains "_" && wlan.fc.type_subtype == 4)" -T fields -e wlan.sa_resolved -e wlan.seq -e frame.time_epoch -e wlan_radio.signal_dbm -e wlan.tag.length > Derand/' + cap + '.xls', shell=True)
+        #openShark()
 
 def openShark():
-    if os.path.exists(f'./Derand/{cap}.xls'):
-        with open(f'./Derand/{cap}.xls', 'r') as d:
+    try:
+        with open('./Derand/%s.xls' % dname, 'r') as d:
+            global dlist
             reader = csv.reader(d, delimiter='\t')
             dlist = list(reader)
             #for line in dlist:
                 #line[2] = timer.strftime('%H:%M:%S', timer.localtime(float(line[2])))
             #dlist = str(dlist)
-        return dlist
+    except FileNotFoundError:
+        capSize = 0
+        return
 
 def magic():
     exectime = timer.time()
-    if not os.path.exists(f'./Derand/{cap}.xls'):
+    if not os.path.exists('./Derand/%s.xls' % dname):
         return 1
-    with open(f'./Derand/{cap}.xls', 'r', encoding='utf-8') as d:
+    with open('./Derand/%s.xls' % dname, 'r', encoding='utf-16') as d:
         reader = csv.reader(d, delimiter='\t')
         dlist = list(reader)
 
@@ -78,42 +80,26 @@ def magic():
     global before; global after; global toGUI
     toGUI = ''; over100 = 0
 
-    # Get average DBm for each MAC
-    avlist = [['', 1]]
-    avdict = {}
-    dbm = 1
-    packet_count = 2
-    prev = ''
+    #-----average db get------#
+    avlist = list(); avlist.append(['',1,2])
+
     for dline in sorted(dlist):
-        if not flags:
-            dline[4] = ''
-        if not dline[3]:
-            continue
-        if 99 + int(dline[3]) <= 0: # if dbm <= 99
+        if not flags: dline[4] = ''
+        if dline[3] and 99 + int(dline[3]) <= 0:
             over100 += 1
-        if dline[0] != avlist[-1][0] and 100 + int(dline[3]) > 0: # if not same mac as previous and <= 99
-            avlist[-1][1] = -round(100 - 10**(avlist[-1][1] / packet_count)) # get average
-            # if prev:
-            #     avdict[prev] = -round(100 - 10**(dbm / packet_count))
-            # dbm = log10(100+int(dline[3])) # get average
-            # avdict[dline[0]] = log10(100+int(dline[3]))
-            avlist.append([dline[0], log10(100+int(dline[3]))])
-            packet_count = 1
-
-        elif 100 + int(dline[3]) > 0: # if dbm <= 99
-            # prev = dline[0]
-            # avdict[dline[0]] = ''
-            avlist[-1][1] += float(log10(100+int(dline[3])))
-            # dbm += float(log10(100+int(dline[3])))
-            # print(avlist[-1][1], dbm)
-            packet_count += 1
-
-            if showAppl is True and Designated in avlist[-1][0]:
-                toGUI = toGUI + str(dline) + '\r\n'
-                print(dline)
-    avlist[-1][1] = -round(100 - 10 ** (avlist[-1][1] / packet_count))  # get average of last line
-    print(avlist)
-    # print(avdict)
+        if dline[3] != '' and dline[0] != avlist[-1][0] and 100 + int(dline[3]) > 0:
+            avlist[-1][1] = -round(100 - 10**(avlist[-1][1]/avlist[-1][2])) # get average
+            avlist.append([dline[0],log10(100+int(dline[3])),1])
+        else:
+            if dline[3] == '':
+                continue
+            if 100 + int(dline[3]) > 0:
+                avlist[-1][1] += float(log10(100+int(dline[3])))
+                avlist[-1][2] += 1
+                if showAppl is True and Designated in avlist[-1][0]:
+                    toGUI = toGUI + str(dline) + '\r\n'
+                    print(dline)
+    avlist[-1][1] = -round(100 - 10 ** (avlist[-1][1] / avlist[-1][2]))  # get average of last line
     #-------------------------#
 
     for avline in avlist:
@@ -322,8 +308,6 @@ def magic():
         print('<<<DESIGNATED IS IN IRRLIST>>>')
 
 if __name__ == "__main__":
-    makeDlist()
-    dlist = openShark()
     from timeit import Timer
     t = Timer(lambda: magic())
     print(t.timeit(number=1))
