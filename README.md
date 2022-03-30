@@ -1,6 +1,9 @@
 # WifiTrackingTools
 ___
 
+- [x] tested with Wireshark 2.4.5
+- [ ] tested with Wireshark 3.6.3
+
 This project is a demonstration of wifi tracking in action, in a wardriving manner, using a Raspberry Pi for packet capture, and analyzing data for tracking wifi devices.  
 MAC address anonymization was introduced as an anecdote to tracking, but it has its limitations and can be bypassed (to an extent) as demonstrated in this project.  
 

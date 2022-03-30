@@ -5,6 +5,7 @@ import os
 import subprocess
 import datetime
 import pandas as pd
+from MACresolver import get_macs
 #import GUI
 
 capsDir = './cap/'
@@ -25,6 +26,11 @@ eq1 = 26; eq2 = 50; eq3 = 60
 capSize = 0
 
 
+# OLD TSHARK COMMAND
+# wlan.sa_resolved contains "Apple" || (not wlan.sa_resolved contains "_" && wlan.fc.type_subtype == 4)
+#f'-Y "wlan.sa_resolved contains "Apple" || (not wlan.sa_resolved contains "_" && wlan.fc.type_subtype == 4)" -T fields '
+#                             f'-e wlan.sa_resolved -e wlan.seq -e frame.time_epoch -e wlan_radio.signal_dbm -e wlan.tag.length
+
 def makeDlist():
     global p
     # global capSize
@@ -32,8 +38,10 @@ def makeDlist():
     if not os.path.isfile(f'./Derand/{cap}.xls'):
         #41s per 100MB
         p = subprocess.Popen(f'"C:/Program Files/Wireshark/tshark.exe" -r {capsDir}{cap}.cap ' +
-                             f'-Y "wlan.sa_resolved contains "Apple" || (not wlan.sa_resolved contains "_" && wlan.fc.type_subtype == 4)" -T fields ' +
-                             f'-e wlan.sa_resolved -e wlan.seq -e frame.time_epoch -e wlan_radio.signal_dbm -e wlan.tag.length > ./Derand/{cap}.xls', shell=True)
+                             f'-Y "wlan.fc.type_subtype == 4 and wlan.tag.oui == 0x0017f2" -T fields '
+                             f'-e wlan.sa -e wlan.seq -e frame.time_epoch -e wlan_radio.signal_dbm -e wlan.ds.current_channel '
+                             f'-e wlan.extcap -e wlan.ht.capabilities -e wlan.ht.ampduparam -e wlan.tag.vendor.data -e wlan.ht.mcsset.rxbitmask.8to15 '
+                             f'-e wlan.tag.vendor.oui.type > ./Derand/{cap}.xls', shell=True)
         #openShark()
     try:
         return os.path.getsize(capsDir + '%s.cap' % cap) >> 20
@@ -50,6 +58,37 @@ def openShark():
                 #line[2] = timer.strftime('%H:%M:%S', timer.localtime(float(line[2])))
             #dlist = str(dlist)
         return dlist
+
+class RequestPacket:
+    with open('./create_ouis.csv', 'r', encoding='utf-8') as f:
+        dd = f.readlines()
+        ouis = dict()
+        for line in dd:
+            entry = line.split('\t')
+            ouis[entry[0]] = entry[1]
+
+    def __init__(self, mac, seq, epoch, dbm, ch, ext_cap, ht_cap, ampduparam, vendor_data, rbitmask_8to15, vendor_oui_type):
+        self.mac = mac.upper()
+        self.seq = seq
+        self.epoch = epoch
+        self.dbm = dbm
+        self.ch = ch
+        self.ext_cap = ext_cap
+        self.ht_cap = ht_cap
+        self.ampduparam = ampduparam
+        self.vendor_data = vendor_data
+        self.rbitmask_8to15 = rbitmask_8to15
+        self.vendor_oui_type = vendor_oui_type
+        self.av_dbm = self.get_av_dbm(5)
+        self.resolve = self.resolve_mac(self.mac)
+
+    def get_av_dbm(self, av):
+        return av
+
+    def resolve_mac(self, mac):
+        if mac[:8] in self.ouis:
+            return self.ouis[mac[:8]]
+
 
 def magic():
     exectime = timer.time()
@@ -324,6 +363,11 @@ def magic():
 if __name__ == "__main__":
     makeDlist()
     dlist = openShark()
+    print(dlist[0])
+    for line in dlist:
+        test = RequestPacket(*line)
+        print(test.resolve)
+    print(test.resolve)
     from timeit import Timer
     t = Timer(lambda: magic())
     print(t.timeit(number=1))
