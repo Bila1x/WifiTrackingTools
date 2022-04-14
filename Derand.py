@@ -78,7 +78,7 @@ class RequestPacket(object):
 
     def __init__(self, mac, seq, epoch, dbm, ch, ext_cap, ht_cap, ampduparam, vendor_data, rbitmask_8to15, vendor_oui_type):
         self.frames.append(self)
-        self.mac = mac.upper()
+        self.mac = mac.lower()
         self.seq = int(seq)
         self.epoch = float(epoch)
         self.dbm = int(dbm)
@@ -241,11 +241,11 @@ def magic():
         elif delta < 3.8:
             Max = eq1; eq = "1"
         elif delta < 11.4:
-            if LastAVdb - RequestPacket.frame_count[frame.mac] > 3: Max = -30
+            if LastAVdb - avdict[frame.mac] > 3: Max = -30
             else: Max = -eq2
             eq = "2"
         elif delta < 360:
-            if LastAVdb - RequestPacket.frame_count[frame.mac] > 5: Max = -80
+            if LastAVdb - avdict[frame.mac] > 5: Max = -80
             else: Max = -eq3
             eq = "3"
         else:
