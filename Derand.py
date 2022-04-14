@@ -18,13 +18,13 @@ MaxDb = "-99"
 cap = "1dec"
 dname = "derand"
 global MAC
-MAC = 'Apple_26:e6:0d'.lower()
-global start
-start = 4924  # 8379
-isStartFound = False
-eq1 = 26; eq2 = 50; eq3 = 60
+MAC = '6c:8d:c1:38:7b:2c'.lower()
+# global start
+# start = 4924  # 8379
+# isStartFound = False
+eq1 = 40; eq2 = 191; eq3 = 60
 capSize = 0
-
+toGUI = ''
 
 # OLD TSHARK COMMAND
 # wlan.sa_resolved contains "Apple" || (not wlan.sa_resolved contains "_" && wlan.fc.type_subtype == 4)
@@ -54,12 +54,17 @@ def openShark():
         with open(f'./Derand/{cap}.xls', 'r') as d:
             reader = csv.reader(d, delimiter='\t')
             dlist = list(reader)
-            #for line in dlist:
-                #line[2] = timer.strftime('%H:%M:%S', timer.localtime(float(line[2])))
-            #dlist = str(dlist)
         return dlist
 
-class RequestPacket:
+
+# class IterFrames(type):
+#     def __iter__(cls):
+#         return iter(cls._frames)
+
+
+class RequestPacket(object):
+    frames = []
+
     with open('./create_ouis.csv', 'r', encoding='utf-8') as f:
         dd = f.readlines()
         ouis = dict()
@@ -67,11 +72,16 @@ class RequestPacket:
             entry = line.split('\t')
             ouis[entry[0]] = entry[1]
 
+    frame_count = {}
+    frame_num = 1
+    start_frame = None
+
     def __init__(self, mac, seq, epoch, dbm, ch, ext_cap, ht_cap, ampduparam, vendor_data, rbitmask_8to15, vendor_oui_type):
+        self.frames.append(self)
         self.mac = mac.upper()
-        self.seq = seq
-        self.epoch = epoch
-        self.dbm = dbm
+        self.seq = int(seq)
+        self.epoch = float(epoch)
+        self.dbm = int(dbm)
         self.ch = ch
         self.ext_cap = ext_cap
         self.ht_cap = ht_cap
@@ -79,11 +89,50 @@ class RequestPacket:
         self.vendor_data = vendor_data
         self.rbitmask_8to15 = rbitmask_8to15
         self.vendor_oui_type = vendor_oui_type
-        self.av_dbm = self.get_av_dbm(5)
         self.resolve = self.resolve_mac(self.mac)
+        if self.mac in RequestPacket.frame_count:
+            RequestPacket.frame_count[self.mac] += 1
+        else:
+            RequestPacket.frame_count[self.mac] = 1
+        self.frame_num = self.frame_num
+        RequestPacket.frame_num += 1
+        # set the first frame of MAC
+        if mac == MAC and not RequestPacket.start_frame:
+            RequestPacket.start_frame = self
 
-    def get_av_dbm(self, av):
-        return av
+    def __repr__(self):
+        return [self.mac, self.seq, self.epoch, self.dbm, self.ch]
+
+    def __str__(self):
+        return f'{self.mac}\t{self.seq}\t{self.epoch}\t{self.dbm}\t{self.ch}'
+
+    @staticmethod
+    def get_av_dbm():
+        avlist = [['', 1]]
+        packet_count = 2
+        over100 = 0
+        for dline in sorted(dlist):
+            # if not flags:
+            #     dline[4] = ''
+            if not dline[3]:
+                continue
+            if 99 + int(dline[3]) <= 0:  # if dbm <= 99
+                over100 += 1
+            if dline[0] != avlist[-1][0] and 100 + int(dline[3]) > 0:  # if not same mac as previous and <= 99
+                avlist[-1][1] = -round(100 - 10 ** (avlist[-1][1] / packet_count))  # get average
+                avlist.append([dline[0], log10(100 + int(dline[3]))])
+                packet_count = 1
+
+            elif 100 + int(dline[3]) > 0:  # if dbm <= 99
+                avlist[-1][1] += float(log10(100 + int(dline[3])))
+                packet_count += 1
+
+                if showAppl is True and MAC in avlist[-1][0]:
+                    toGUI += toGUI + str(dline) + '\r\n'
+                    print(dline)
+        avlist[-1][1] = -round(100 - 10 ** (avlist[-1][1] / packet_count))  # get average of last line
+        print(avlist)
+        return avlist
 
     def resolve_mac(self, mac):
         if mac[:8] in self.ouis:
@@ -99,137 +148,156 @@ def magic():
         dlist = list(reader)
 
     Irrlist = set()
-    z = 0
-    global start; global isStartFound
-    for line in dlist:
-        z += 1
-        if line[0].lower() == MAC:
-            start = z
-            isStartFound = True
-            break
-    if not isStartFound:
-        print('MAC DOES NOT EXIST')
-        return True
-    #flags = dlist[start - 1][4]
 
-    LastRandMac = dlist[start - 1][0]
+    # LastRandMac = dlist[start - 1][0]
+    LastRandMac = MAC
     Designated = LastRandMac
     global before; global after; global toGUI
     toGUI = ''; over100 = 0
 
     # Get average DBm for each MAC
     avlist = [['', 1]]
-    avdict = {}
+    avdict = {'':1}
+    prev = ''
     dbm = 1
     packet_count = 2
     prev = ''
     for dline in sorted(dlist):
-        if not flags:
-            dline[4] = ''
+        # if not flags:
+        #     dline[4] = ''
         if not dline[3]:
             continue
         if 99 + int(dline[3]) <= 0: # if dbm <= 99
             over100 += 1
-        if dline[0] != avlist[-1][0] and 100 + int(dline[3]) > 0: # if not same mac as previous and <= 99
-            avlist[-1][1] = -round(100 - 10**(avlist[-1][1] / packet_count)) # get average
-            # if prev:
-            #     avdict[prev] = -round(100 - 10**(dbm / packet_count))
-            # dbm = log10(100+int(dline[3])) # get average
-            # avdict[dline[0]] = log10(100+int(dline[3]))
-            avlist.append([dline[0], log10(100+int(dline[3]))])
+        if dline[0] != prev and 100 + int(dline[3]) > 0: # if not same mac as previous and <= 99
+            avdict[prev] = -round(100 - 10**(avdict[prev] / packet_count)) # get average
+            avdict[dline[0]] = log10(100+int(dline[3]))
+            prev = dline[0]
             packet_count = 1
 
         elif 100 + int(dline[3]) > 0: # if dbm <= 99
-            # prev = dline[0]
-            # avdict[dline[0]] = ''
-            avlist[-1][1] += float(log10(100+int(dline[3])))
-            # dbm += float(log10(100+int(dline[3])))
-            # print(avlist[-1][1], dbm)
+            avdict[prev] += float(log10(100+int(dline[3])))
             packet_count += 1
 
-            if showAppl is True and Designated in avlist[-1][0]:
+            if showAppl is True and Designated in prev:
                 toGUI = toGUI + str(dline) + '\r\n'
                 print(dline)
-    avlist[-1][1] = -round(100 - 10 ** (avlist[-1][1] / packet_count))  # get average of last line
-    print(avlist)
+    avdict[prev] = -round(100 - 10 ** (avdict[prev] / packet_count))  # get average of last line
+    print(avdict)
+
     # print(avdict)
+    # avlist = RequestPacket.get_av_dbm()
+    print(dlist[0])
     #-------------------------#
 
-    for avline in avlist:
-        if Designated == avline[0]:
-            ApplAV = avline[1]
-            print('Designated MAC average db', ApplAV)
-            if ApplAV < MaxAV:
-                return
-                # break
-        if avline[1] < MaxAV: Irrlist.add(avline[0])
+    if Designated in avdict.keys():
+        ApplAV = avdict[Designated]
+        print('Designated MAC average db', ApplAV)
+        if ApplAV < MaxAV:
+            return
     for x in dlist: x += [0,0]
 
-    MACfirstseen = start; SN = int(dlist[start - 1][1]); time = float(dlist[start - 1][2])
-    i = 0; f = 0; fcount = 0; LastAVdb = ApplAV
+    MACfirstseen = MAC
+    first_seen = RequestPacket.start_frame
+    if not first_seen:
+        print('MAC DOES NOT EXIST')
+        return True
+    SN = int(first_seen.seq)
+    time = float(first_seen.epoch)
+    i, fcount = 0, 0
+    LastAVdb = ApplAV
     before = list()
-    firstMACtime = 0; lastMACtime = 0
+    firstMACtime = 0
+    lastMACtime = 0
+    started = False
 
-    for dline in reversed(dlist): #before start
-        i+=1
-        if i <= len(dlist) - MACfirstseen + 1: # jump to start or LastRandMac's first occurrence
-            if before and dline[0] != LastRandMac:
-                Irrlist.add(dline[0])
+    for frame in reversed(RequestPacket.frames): #before start
+        # i += 1
+        if not started and not (frame == first_seen or frame == RequestPacket.start_frame): # jump to start or LastRandMac's first occurrence
+            started = True
+            if before and frame.mac != LastRandMac:
+                Irrlist.add(frame.mac)
             continue
 
-        if dline[0] not in Irrlist:
-            if str(dline[4]) == str(flags) or 'Apple' in dline[0] or dline[0] == Designated:
-                for avline in avlist:
-                    if avline[0] == dline[0]:
-                        dline[5] = avline[1]; macfcount = avline[2]
-                        break
-                delta = time - float(dline[2])
+        if frame.mac in Irrlist:
+            continue
 
-                if delta < 0.3 and LastRandMac != dline[0]:
-                    Irrlist.add(dline[0])
-                    continue
-                elif delta < 3.8:
-                    Max = eq1; eq = "1"
-                elif delta < 11.4:
-                    if LastAVdb - dline[5] > 3: Max = -30
-                    else: Max = -eq2
-                    eq = "2"
-                elif delta < 360:
-                    if LastAVdb - dline[5] > 5: Max = -80
-                    else: Max = -eq3
-                    eq = "3"
-                else:
+        # print([frame.ext_cap ,  first_seen.ext_cap ,  frame.ht_cap ,  first_seen.ht_cap ,  frame.ampduparam ,  first_seen.ampduparam
+        # ,  frame.vendor_data ,  first_seen.vendor_data ,  frame.rbitmask_8to15 ,  first_seen.rbitmask_8to15
+        # ])
+
+        if not (frame.ext_cap == first_seen.ext_cap and frame.ht_cap == first_seen.ht_cap and frame.ampduparam == first_seen.ampduparam
+                and frame.vendor_data == first_seen.vendor_data and frame.rbitmask_8to15 == first_seen.rbitmask_8to15):
+            Irrlist.add(frame.mac)
+            continue
+
+        if frame.mac in avdict.keys():
+            macfcount = RequestPacket.frame_count[frame.mac]
+        delta = time - float(frame.epoch)
+
+        if delta < 0.3 and LastRandMac != frame.mac:
+            Irrlist.add(frame.mac)
+            continue
+        elif delta < 3.8:
+            Max = eq1; eq = "1"
+        elif delta < 11.4:
+            if LastAVdb - RequestPacket.frame_count[frame.mac] > 3: Max = -30
+            else: Max = -eq2
+            eq = "2"
+        elif delta < 360:
+            if LastAVdb - RequestPacket.frame_count[frame.mac] > 5: Max = -80
+            else: Max = -eq3
+            eq = "3"
+        else:
+            break
+
+        if ((frame.seq < SN) and (frame.seq >= (SN + Max)))\
+                or (4096 + SN - frame.seq <= -Max) or (LastRandMac == frame.mac)\
+                or (Designated == frame.mac): #if SN within range or it's the same last MAC
+
+            human_time = datetime.datetime.fromtimestamp(frame.epoch).strftime("%H:%M:%S.%f")
+            before.append([frame.mac, frame.seq, human_time, frame.dbm, str(round(delta, 3)), str(Max), eq, str(SN - frame.seq)])
+
+            LastRandMac = frame.mac
+            LastAVdb = RequestPacket.frame_count[frame.mac]
+            SN = frame.seq
+            time = frame.epoch
+            fcount += macfcount
+            if len(before) == 1:
+                lastMACtime = frame.epoch
+            firstMACtime = frame.epoch
+
+            # for first in dlist: #get mac first seen in list
+            #     f += 1
+            #     if first[0] == dline[0]: # update stuff when mac first seen is found
+            #         MACfirstseen = f
+            #         SN = int(first[1])
+            #         time = float(first[2])
+            #         first[5] = RequestPacket.frame_count[dline[0]]
+            #         firstMACtime = float(first[2])
+            #         if first not in before[-1]: before.append(first + ['-', '-', '-', '-']) #avoid double printing
+            #         f = 0
+            #         break
+
+            # Find first seen of this MAC
+            for f in frames:
+                if f == frame:
+                    started = False
+                    first_seen = f
+                    SN = f.seq
+                    time = f.epoch
+                    count = RequestPacket.frame_count[frame.mac]
+                    firstMACtime = f.epoch
+                    # if str(f) not in before[-1]: before.append(str(f))# + ['-', '-', '-', '-'])  # avoid double printing
                     break
 
-                #if (int(dline[3]) <= int(MaxDb)): # or (SN - int(dline[1]) > MaxSNgap):
-                    #Irrlist.add(dline[0])
-                    #continue
-
-                if ((int(dline[1]) < SN) and (int(dline[1]) >= (SN + Max))) or (4096 + SN - int(dline[1]) <= -Max) or (LastRandMac == dline[0]) or (Designated == dline[0]): #if SN within range or it's the same last MAC
-
-                    #before.append(str(dline) + "\t" + str(round(delta, 3)) + "\t" + str(Max) + "\t" + eq + "\t" + str(SN - int(dline[1])))
-                    before.append(dline + [str(round(delta, 3)), str(Max), eq, str(SN - int(dline[1]))])
-
-                    LastRandMac = dline[0]; LastAVdb = dline[5]; SN = int(dline[1]); time = float(dline[2])
-                    fcount += macfcount
-                    if len(before) == 1: lastMACtime = float(dline[2])
-                    firstMACtime = float(dline[2])
-
-                    for first in dlist: #get mac first seen in list
-                        f += 1
-                        if first[0] == dline[0]: # update stuff when mac first seen is found
-                            MACfirstseen = f; SN = int(first[1]); time = float(first[2]); first[5] = dline[5]; firstMACtime = float(first[2])
-                            if first not in before[-1]: before.append(first + ['-', '-', '-', '-']) #avoid double printing
-                            f = 0
-                            break
-                else: Irrlist.add(dline[0])
-            else: Irrlist.add(dline[0])
+        else: Irrlist.add(frame.mac)
 
     before = before[::-1]
 
-    for line in before:
-        #line[2] = timer.strftime('%H:%M:%S.%f', timer.localtime(float(line[2])))
-        line[2] = datetime.datetime.fromtimestamp(float(line[2])).strftime("%H:%M:%S.%f")
+    # for line in before:
+    #     #line[2] = timer.strftime('%H:%M:%S.%f', timer.localtime(float(line[2])))
+    #     line[2] = datetime.datetime.fromtimestamp(frame.epoch).strftime("%H:%M:%S.%f")
         #print(line)
         #toGUI += '\r\n' + str(line)
 
@@ -257,84 +325,107 @@ def magic():
         for line in Irrlist:
             print(line)
     out += "-------------------------------------------------------------------" + '\r\n'
-    out += timer.strftime('%H:%M:%S', timer.localtime(float(dlist[start - 1][2]))) + '\r\n'
-    out += str(dlist[start - 1]) + '\r\n'
+    out += timer.strftime('%H:%M:%S', timer.localtime(first_seen.epoch)) + '\r\n'
+    out += str(first_seen) + '\r\n'
     out += "-------------------------------------------------------------------" + '\r\n'
     print(out)
     toGUI += out
 
-    MACfirstseen = start; LastRandMac = dlist[start - 1][0]; SN = int(dlist[start - 1][1]); time = float(dlist[start - 1][2])
+    MACfirstseen = MAC
+    LastRandMac = first_seen.mac
+    SN = first_seen.seq
+    time = first_seen.epoch
     after = list()
     firstMACtime = 0; lastMACtime = 0
     i = 0; f = 0; fcount = 0; LastAVdb = ApplAV
+    started = False
 
-    for dline in dlist: #after start
-        i+=1
-        if i <= MACfirstseen: # jump to start or LastRandMac's first occurrence
-            if after and dline[0] != LastRandMac:
-                Irrlist.add(dline[0])
+    for frame in RequestPacket.frames: #after start
+        # i+=1
+        if not started and not (frame == first_seen or frame == RequestPacket.start_frame): # jump to start or LastRandMac's first occurrence
+            started = True
+            if after and frame.mac != LastRandMac:
+                Irrlist.add(frame.mac)
             continue
 
-        if dline[0] not in Irrlist:
-            if str(dline[4]) == str(flags) or 'Apple' in dline[0] or dline[0] == Designated:
-                for avline in avlist:
-                    if avline[0] == dline[0]:
-                        dline[5] = avline[1]; macfcount = avline[2]
-                        break
-                delta = float(dline[2]) - time
+        if frame.mac in Irrlist:
+            continue
 
-                if delta < 0.3 and LastRandMac != dline[0]:
-                    Irrlist.add(dline[0])
-                    continue
-                elif delta < 3.8:
-                    Max = eq1; eq = "1"
-                elif delta < 11.4:
-                    if LastAVdb - dline[5] > 4: Max = (30)
-                    else: Max = eq2
-                    eq = "2"
-                elif delta < 360:
-                    if LastAVdb - dline[5] > 4: Max = (70)
-                    else: Max = eq3
-                    eq = "3"
-                else:
-                    break
+        # if 'Apple' in frame.mac or frame.mac == Designated:
+        # for avline in avlist:
+        #     if avline[0] == dline[0]:
+        #         dline[5] = avline[1];# macfcount = avline[2]
+        #         macfcount = RequestPacket.frame_count[dline[0]]
+        #         break
+        if frame.mac in avdict.keys():
+            macfcount = RequestPacket.frame_count[frame.mac]
+        delta = frame.epoch - time
+
+        if delta < 0.3 and LastRandMac != frame.mac:
+            Irrlist.add(frame.mac)
+            continue
+        elif delta < 3.8:
+            Max = eq1; eq = "1"
+        elif delta < 11.4:
+            if LastAVdb - RequestPacket.frame_count[frame.mac] > 4: Max = (30)
+            else: Max = eq2
+            eq = "2"
+        elif delta < 360:
+            if LastAVdb - RequestPacket.frame_count[frame.mac] > 4: Max = (70)
+            else: Max = eq3
+            eq = "3"
+        else:
+            break
 
                 #if (int(dline[3]) <= int(MaxDb)): # or (int(dline[1]) - SN > MaxSNgap):
                     #Irrlist.add(dline[0])
                     #continue
-                if ((int(dline[1]) > SN) and (int(dline[1]) <= (SN + Max))) or (4096 - SN + int(dline[1]) <= Max) or (LastRandMac == dline[0]) or (Designated == dline[0]): #if SN within range or it's the same last MAC
+        if ((frame.seq > SN) and (frame.seq <= (SN + Max))) or (4096 - SN + frame.seq <= Max) or (LastRandMac == frame.mac) or (Designated == frame.mac): #if SN within range or it's the same last MAC
 
-                    #after.append(str(dline) + "\t" + str(round(delta, 3)) + "\t" + str(Max) + "\t" + eq + "\t" + str(int(dline[1]) - SN))
-                    after.append(dline + [str(round(delta, 3)), str(Max), eq, str(int(dline[1]) - SN)])
+            human_time = datetime.datetime.fromtimestamp(frame.epoch).strftime("%H:%M:%S.%f")
+            after.append([frame.mac, frame.seq, human_time, frame.dbm, str(round(delta, 3)), str(Max), eq, str(frame.seq - SN)])
 
-                    LastRandMac = dline[0]
-                    # LastDb = int(dline[3])
-                    SN = int(dline[1])
-                    time = float(dline[2])
+            LastRandMac = frame.mac
+            # LastDb = int(dline[3])
+            SN = frame.seq
+            time = float(frame.epoch)
 
-                    fcount += macfcount
-                    if len(after) == 1: firstMACtime = float(dline[2])
-                    lastMACtime = float(dline[2])
+            fcount += macfcount
+            if len(after) == 1:
+                firstMACtime = frame.epoch
+            lastMACtime = frame.epoch
 
-                    for last in reversed(dlist): #get mac last seen in list
-                        f += 1
-                        if last[0] == dline[0]:
-                            MACfirstseen = len(dlist) - f + 1; SN = int(last[1]); time = float(last[2]); last[5] = dline[5]; lastMACtime = float(last[2])
-                            #after.append(str(last) + "\t" + str(round(delta, 3)) + "\t" + str(round(Max)) + "\t" + eq)
-                            if last not in after[-1]: after.append(last + ['-', '-', '-', '-'])  # avoid double printing
-                            f = 0
-                            break
-                else: Irrlist.add(dline[0])
-            else: Irrlist.add(dline[0])
+            # for last in reversed(dlist): #get mac last seen in list
+            #     f += 1
+            #     if last[0] == frame.mac:
+            #         MACfirstseen = len(dlist) - f + 1; SN = int(last[1]); time = float(last[2]); last[5] = RequestPacket.frame_count[frame.mac]; lastMACtime = float(last[2])
+            #         #after.append(str(last) + "\t" + str(round(delta, 3)) + "\t" + str(round(Max)) + "\t" + eq)
+            #         if last not in after[-1]: after.append(last + ['-', '-', '-', '-'])  # avoid double printing
+            #         f = 0
+            #         break
+
+            for f in reversed(frames):
+                if f == frame:
+                    started = False
+                    first_seen = f
+                    SN = f.seq
+                    time = f.epoch
+                    count = RequestPacket.frame_count[frame.mac]
+                    firstMACtime = f.epoch
+                    # if str(f) not in after[-1]:
+                    #     after.append(str(f))# + ['-', '-', '-', '-'])  # avoid double printing
+                    break
+
+        else: Irrlist.add(frame.mac)
 
     out = ''
     if len(after):
         aftertime = timer.strftime('%H:%M:%S', timer.localtime(firstMACtime)) + ' - ' + timer.strftime('%H:%M:%S', timer.localtime(lastMACtime))
         toGUI += aftertime
         print(aftertime)
-    for line in after:
+    # for line in after:
         #line[2] = timer.strftime('%H:%M:%S.%f', timer.localtime(float(line[2])))
-        line[2] = datetime.datetime.fromtimestamp(float(line[2])).strftime("%H:%M:%S.%f")
+        # line[2] = datetime.datetime.fromtimestamp(frame.epoch).strftime("%H:%M:%S.%f")
         #print(line)
         #toGUI += '\r\n' + str(line)
 
@@ -352,7 +443,7 @@ def magic():
     out += '{}{}{}'.format('num. of ignored MACS ', str(len(Irrlist)), '\r\n')
     #out += '{}{}{}'.format('output lines ', str(len(after)), '\r\n')
     out += '{}{}{}{}{}'.format('searched lines ', str(i), ' out of ', str(len(dlist)), '\r\n')
-    out += '{}{}{}'.format('Average list length ', str(len(avlist)), '\r\n')
+    out += '{}{}{}'.format('Average dict length ', str(len(avdict)), '\r\n')
     out += '{}{}{}{}'.format('in ', str(round(timer.time() - exectime, 2)), ' seconds', '\r\n')
     out += '{}{}'.format('-------------------------------------------------------------------', '\r\n')
     print(out)
@@ -364,10 +455,12 @@ if __name__ == "__main__":
     makeDlist()
     dlist = openShark()
     print(dlist[0])
-    for line in dlist:
-        test = RequestPacket(*line)
-        print(test.resolve)
-    print(test.resolve)
+    frames = [None] * len(dlist)
+
+    for num, line in enumerate(dlist):
+        frames[num] = RequestPacket(*line)
+    # for a in RequestPacket.frames:
+    #     print(1)
     from timeit import Timer
     t = Timer(lambda: magic())
     print(t.timeit(number=1))
