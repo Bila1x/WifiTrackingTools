@@ -18,7 +18,7 @@ MaxDb = "-99"
 cap = "1dec"
 dname = "derand"
 global MAC
-MAC = '6c:8d:c1:38:7b:2c'.lower()
+MAC = 'e8:36:17:0d:34:63'.lower()
 # global start
 # start = 4924  # 8379
 # isStartFound = False
@@ -213,9 +213,10 @@ def magic():
 
     for frame in reversed(RequestPacket.frames): #before start
         # i += 1
-        if not started and not (frame == first_seen or frame == RequestPacket.start_frame): # jump to start or LastRandMac's first occurrence
+        # if frame != RequestPacket.start_frame:
+        if not started and frame != first_seen: # jump to start or LastRandMac's first occurrence
             started = True
-            if before and frame.mac != LastRandMac:
+            if before and frame.mac != LastRandMac: # add macs in between to Irrelevant list
                 Irrlist.add(frame.mac)
             continue
 
@@ -256,7 +257,8 @@ def magic():
                 or (Designated == frame.mac): #if SN within range or it's the same last MAC
 
             human_time = datetime.datetime.fromtimestamp(frame.epoch).strftime("%H:%M:%S.%f")
-            before.append([frame.mac, frame.seq, human_time, frame.dbm, str(round(delta, 3)), str(Max), eq, str(SN - frame.seq)])
+            before.append([frame.mac, frame.seq, human_time, frame.dbm,
+                           str(round(delta, 3)), str(Max), eq, str(SN - frame.seq)])
 
             LastRandMac = frame.mac
             LastAVdb = RequestPacket.frame_count[frame.mac]
@@ -281,8 +283,8 @@ def magic():
 
             # Find first seen of this MAC
             for f in frames:
-                if f == frame:
-                    started = False
+                if f.mac == frame.mac:
+                    # started = False
                     first_seen = f
                     SN = f.seq
                     time = f.epoch
@@ -305,8 +307,7 @@ def magic():
     before = pd.DataFrame(before)
     pd.set_option('display.max_rows', len(before))
     before.rename(
-        columns={0: 'MAC', 1: 'SN', 2: 'Time', 3: 'dBm', 4: 'Flags', 5: 'AVdb', 6: '0', 7: 'Delta', 8: 'Max',
-                 9: 'eq', 10: 'SN delta', }, inplace=True)
+        columns={0: 'MAC', 1: 'SN', 2: 'Time', 3: 'dBm', 4: 'Time-Delta', 5: 'MAX', 6: 'EQ', 7: 'SN-Delta', 8: 'Max'}, inplace=True)
     print(before)
     toGUI += '\r\n' + str(before)
 
@@ -331,7 +332,7 @@ def magic():
     print(out)
     toGUI += out
 
-    MACfirstseen = MAC
+    last_seen = RequestPacket.start_frame
     LastRandMac = first_seen.mac
     SN = first_seen.seq
     time = first_seen.epoch
@@ -341,8 +342,7 @@ def magic():
     started = False
 
     for frame in RequestPacket.frames: #after start
-        # i+=1
-        if not started and not (frame == first_seen or frame == RequestPacket.start_frame): # jump to start or LastRandMac's first occurrence
+        if not started and frame != last_seen: # jump to start or LastRandMac's first occurrence
             started = True
             if after and frame.mac != LastRandMac:
                 Irrlist.add(frame.mac)
@@ -351,12 +351,6 @@ def magic():
         if frame.mac in Irrlist:
             continue
 
-        # if 'Apple' in frame.mac or frame.mac == Designated:
-        # for avline in avlist:
-        #     if avline[0] == dline[0]:
-        #         dline[5] = avline[1];# macfcount = avline[2]
-        #         macfcount = RequestPacket.frame_count[dline[0]]
-        #         break
         if frame.mac in avdict.keys():
             macfcount = RequestPacket.frame_count[frame.mac]
         delta = frame.epoch - time
@@ -380,7 +374,9 @@ def magic():
                 #if (int(dline[3]) <= int(MaxDb)): # or (int(dline[1]) - SN > MaxSNgap):
                     #Irrlist.add(dline[0])
                     #continue
-        if ((frame.seq > SN) and (frame.seq <= (SN + Max))) or (4096 - SN + frame.seq <= Max) or (LastRandMac == frame.mac) or (Designated == frame.mac): #if SN within range or it's the same last MAC
+        if ((frame.seq > SN) and (frame.seq <= (SN + Max)))\
+                or (4096 - SN + frame.seq <= Max) or (LastRandMac == frame.mac)\
+                or (Designated == frame.mac): #if SN within range or it's the same last MAC
 
             human_time = datetime.datetime.fromtimestamp(frame.epoch).strftime("%H:%M:%S.%f")
             after.append([frame.mac, frame.seq, human_time, frame.dbm, str(round(delta, 3)), str(Max), eq, str(frame.seq - SN)])
@@ -407,7 +403,7 @@ def magic():
             for f in reversed(frames):
                 if f == frame:
                     started = False
-                    first_seen = f
+                    last_seen = f
                     SN = f.seq
                     time = f.epoch
                     count = RequestPacket.frame_count[frame.mac]
@@ -433,8 +429,7 @@ def magic():
     after = pd.DataFrame(after)
     pd.set_option('display.max_rows', len(after))
     after.rename(
-        columns={0: 'MAC', 1: 'SN', 2: 'Time', 3: 'dBm', 4: 'Flags', 5: 'AVdb', 6: '0', 7: 'Delta', 8: 'Max',
-                 9: 'eq', 10: 'SN delta', }, inplace=True)
+        columns={0: 'MAC', 1: 'SN', 2: 'Time', 3: 'dBm', 4: 'Time-Delta', 5: 'MAX', 6: 'EQ', 7: 'SN-Delta', 8: 'Max'}, inplace=True)
     print(after)
     toGUI += '\r\n' + str(after)
 
