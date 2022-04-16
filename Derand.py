@@ -22,7 +22,7 @@ MAC = 'e8:36:17:0d:34:63'.lower()
 # global start
 # start = 4924  # 8379
 # isStartFound = False
-eq1 = 40; eq2 = 191; eq3 = 60
+eq1 = 150; eq2 = 191; eq3 = 60
 capSize = 0
 toGUI = ''
 
@@ -99,6 +99,18 @@ class RequestPacket(object):
         # set the first frame of MAC
         if mac == MAC and not RequestPacket.start_frame:
             RequestPacket.start_frame = self
+
+    def boundries(self, reverse=False) -> object:
+        mac = self.mac
+        if reverse:
+            frames = reversed(RequestPacket.frames)
+        else:
+            frames = RequestPacket.frames
+
+        for frame in frames:
+            if frame.mac == mac:
+                return frame
+
 
     def __repr__(self):
         return [self.mac, self.seq, self.epoch, self.dbm, self.ch]
@@ -209,18 +221,17 @@ def magic():
     before = list()
     firstMACtime = 0
     lastMACtime = 0
-    started = False
+    skip = True
 
     for frame in reversed(RequestPacket.frames): #before start
-        # i += 1
-        # if frame != RequestPacket.start_frame:
-        if not started and frame != first_seen: # jump to start or LastRandMac's first occurrence
-            started = True
-            if before and frame.mac != LastRandMac: # add macs in between to Irrelevant list
+        if frame != first_seen and skip: # jump to start or LastRandMac's first occurrence
+            if before and frame.mac != LastRandMac:
                 Irrlist.add(frame.mac)
             continue
+        elif frame == first_seen:
+            skip = False
 
-        if frame.mac in Irrlist:
+        if frame.mac in Irrlist or frame.resolve:
             continue
 
         # print([frame.ext_cap ,  first_seen.ext_cap ,  frame.ht_cap ,  first_seen.ht_cap ,  frame.ampduparam ,  first_seen.ampduparam
@@ -252,7 +263,7 @@ def magic():
         else:
             break
 
-        if ((frame.seq < SN) and (frame.seq >= (SN + Max)))\
+        if ((frame.seq < SN) and (frame.seq >= (SN - Max)))\
                 or (4096 + SN - frame.seq <= -Max) or (LastRandMac == frame.mac)\
                 or (Designated == frame.mac): #if SN within range or it's the same last MAC
 
@@ -282,16 +293,11 @@ def magic():
             #         break
 
             # Find first seen of this MAC
-            for f in frames:
-                if f.mac == frame.mac:
-                    # started = False
-                    first_seen = f
-                    SN = f.seq
-                    time = f.epoch
-                    count = RequestPacket.frame_count[frame.mac]
-                    firstMACtime = f.epoch
-                    # if str(f) not in before[-1]: before.append(str(f))# + ['-', '-', '-', '-'])  # avoid double printing
-                    break
+            first_seen = RequestPacket.boundries(frame)
+            SN = first_seen.seq
+            time = first_seen.epoch
+            count = RequestPacket.frame_count[frame.mac]
+            firstMACtime = first_seen.epoch
 
         else: Irrlist.add(frame.mac)
 
@@ -327,28 +333,30 @@ def magic():
             print(line)
     out += "-------------------------------------------------------------------" + '\r\n'
     out += timer.strftime('%H:%M:%S', timer.localtime(first_seen.epoch)) + '\r\n'
-    out += str(first_seen) + '\r\n'
+    out += str(RequestPacket.start_frame) + '\r\n'
     out += "-------------------------------------------------------------------" + '\r\n'
     print(out)
     toGUI += out
 
-    last_seen = RequestPacket.start_frame
+    last_seen = RequestPacket.boundries(RequestPacket.start_frame, reverse=True)
     LastRandMac = first_seen.mac
     SN = first_seen.seq
     time = first_seen.epoch
     after = list()
     firstMACtime = 0; lastMACtime = 0
     i = 0; f = 0; fcount = 0; LastAVdb = ApplAV
-    started = False
+    skip = True
 
     for frame in RequestPacket.frames: #after start
-        if not started and frame != last_seen: # jump to start or LastRandMac's first occurrence
-            started = True
+        if frame != last_seen and skip: # jump to start or LastRandMac's first occurrence
             if after and frame.mac != LastRandMac:
                 Irrlist.add(frame.mac)
             continue
+        else:
+            skip = False
 
-        if frame.mac in Irrlist:
+
+        if frame.mac in Irrlist or frame.resolve:
             continue
 
         if frame.mac in avdict.keys():
@@ -370,10 +378,6 @@ def magic():
             eq = "3"
         else:
             break
-
-                #if (int(dline[3]) <= int(MaxDb)): # or (int(dline[1]) - SN > MaxSNgap):
-                    #Irrlist.add(dline[0])
-                    #continue
         if ((frame.seq > SN) and (frame.seq <= (SN + Max)))\
                 or (4096 - SN + frame.seq <= Max) or (LastRandMac == frame.mac)\
                 or (Designated == frame.mac): #if SN within range or it's the same last MAC
@@ -399,18 +403,14 @@ def magic():
             #         if last not in after[-1]: after.append(last + ['-', '-', '-', '-'])  # avoid double printing
             #         f = 0
             #         break
-
-            for f in reversed(frames):
-                if f == frame:
-                    started = False
-                    last_seen = f
-                    SN = f.seq
-                    time = f.epoch
-                    count = RequestPacket.frame_count[frame.mac]
-                    firstMACtime = f.epoch
-                    # if str(f) not in after[-1]:
-                    #     after.append(str(f))# + ['-', '-', '-', '-'])  # avoid double printing
-                    break
+            last_seen = RequestPacket.boundries(frame, reverse=True)
+            SN = last_seen.seq
+            time = last_seen.epoch
+            count = RequestPacket.frame_count[frame.mac]
+            firstMACtime = last_seen.epoch
+            # if str(f) not in after[-1]:
+            #     after.append(str(f))# + ['-', '-', '-', '-'])  # avoid double printing
+            # break
 
         else: Irrlist.add(frame.mac)
 
