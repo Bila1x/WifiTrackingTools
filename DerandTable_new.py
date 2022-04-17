@@ -36,6 +36,7 @@ class Ui_MainWindow(object):
         self.Result.setMinimumSize(QtCore.QSize(0, 300))
         font = QtGui.QFont()
         font.setFamily("Monospace")
+        font.setStyleHint(font.TypeWriter)
         font.setPointSize(14)
         self.Result.setFont(font)
         self.Result.setPlainText("")
@@ -202,8 +203,8 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.flagSwitch, self.Derand)
         MainWindow.setTabOrder(self.Derand, self.Result)
 
-        self.start.setText('Apple_26:e6:0d')
-        self.csvDir.setText('derand')
+        self.start.setText('e8:36:17:0d:34:63')
+        self.csvDir.setText('1dec')
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -244,22 +245,27 @@ class Ui_MainWindow(object):
         except:
             return
         #Derand.showAppl = int(self.???.text())
-        print(Derand.MAC)
-        Derand.MaxAV = int(self.MaxAV.text())
-        Derand.MaxSNgap = int(self.MaxSNgap.text())
-        if not self.flagSwitch.isChecked():
-            Derand.flags = ''
-        elif self.flg.text():
-            Derand.flags = self.flg.text()
-        # else:
-        #     Derand.flags = Derand.dlist[Derand.start - 1][4]
-        Derand.MaxDb = int(self.MaxDb.text())
+        # print(Derand.MAC)
+        # Derand.MaxAV = int(self.MaxAV.text())
+        # Derand.MaxSNgap = int(self.MaxSNgap.text())
+        # if not self.flagSwitch.isChecked():
+        #     Derand.flags = ''
+        # elif self.flg.text():
+        #     Derand.flags = self.flg.text()
+
+        # Derand.MaxDb = int(self.MaxDb.text())
         Derand.after = ''
         Derand.eq1 = self.eq1.value()
         Derand.eq2 = self.eq2.value()
         Derand.eq3 = self.eq3.value()
-        # try:
-        magic_fail = Derand.magic()
+
+        Derand.dlist = Derand.openShark()
+        Derand.frames = [None] * len(Derand.dlist)
+
+        for num, line in enumerate(Derand.dlist):
+            Derand.frames[num] = Derand.RequestPacket(*line)
+        target_frame = Derand.RequestPacket.boundaries(self.start.text())
+        magic_fail = Derand.magic(target_frame)
         # if not magic_fail:
         #     if Derand.start > len(Derand.dlist):
         #         return
