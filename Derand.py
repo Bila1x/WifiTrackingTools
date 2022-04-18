@@ -15,7 +15,7 @@ flags = ''
 MaxDb = "-99"
 cap = "1dec"
 dname = "derand"
-eq1, eq2, eq3 = 150, 191, 60
+eq1, eq2, eq3 = 60, 60, 60
 capSize = 0
 
 # OLD TSHARK COMMAND
@@ -201,6 +201,7 @@ def magic(target_frame):
     before = list()
     firstMACtime, lastMACtime = 0, 0
     skip = True
+    new_mac = False
 
     for frame in reversed(RequestPacket.frames): #before start
         if frame != first_seen and skip: # jump to start or LastRandMac's first occurrence
@@ -210,7 +211,7 @@ def magic(target_frame):
         elif frame == first_seen:
             skip = False
 
-        if frame.mac in Irrlist or frame.resolve:
+        if frame.mac in Irrlist or (frame.resolve and frame.mac != target_frame.mac):
             continue
 
         if not (frame.ext_cap == first_seen.ext_cap and frame.ht_cap == first_seen.ht_cap and frame.ampduparam == first_seen.ampduparam
@@ -220,23 +221,16 @@ def magic(target_frame):
 
         if frame.mac in avdict.keys():
             macfcount = RequestPacket.frame_count[frame.mac]
-        t_delta = time - float(frame.epoch)
+        t_delta = time - frame.epoch
 
-        if t_delta < 0.3 and prev_mac != frame.mac:
+        if prev_mac != frame.mac and t_delta < 0.05:
             Irrlist.add(frame.mac)
             continue
-        elif t_delta < 3.8:
-            max_sn_delta = eq1
-        elif t_delta < 11.4:
-            if LastAVdb - avdict[frame.mac] > 3:
-                max_sn_delta = -30
-            else:
-                max_sn_delta = -eq2
-        elif t_delta < 360:
+        elif t_delta < 560:
             if LastAVdb - avdict[frame.mac] > 5:
-                max_sn_delta = -80
+                max_sn_delta = eq1
             else:
-                max_sn_delta = -eq3
+                max_sn_delta = eq1
         else:
             break
 
@@ -245,11 +239,15 @@ def magic(target_frame):
         else:
             sn_delta = 4096 - prev_seq + frame.seq
 
-        if sn_delta <= max_sn_delta or (prev_mac == frame.mac) or (frame.mac == target_frame.mac):  # if seq within range or it's the same last MAC
+        if prev_mac != frame.mac and t_delta < 0.05:
+            Irrlist.add(frame.mac)
+            continue
+
+        # if seq within range, or it's the same as last or target MAC
+        if sn_delta <= max_sn_delta or (prev_mac == frame.mac) or (frame.mac == target_frame.mac):
 
             human_time = datetime.datetime.fromtimestamp(frame.epoch).strftime("%H:%M:%S.%f")
-            before.append([frame.mac, frame.seq, human_time, frame.dbm,
-                           str(round(t_delta, 3)), str(max_sn_delta), str(sn_delta)])
+            before.append([frame.mac, frame.seq, human_time, frame.dbm, round(t_delta, 3), max_sn_delta, sn_delta])
 
             prev_mac = frame.mac
             LastAVdb = RequestPacket.frame_count[frame.mac]
@@ -296,8 +294,8 @@ def magic(target_frame):
     toGUI += out
 
     last_seen = RequestPacket.boundaries(target_frame.mac, reverse=True)
-    prev_mac = first_seen.mac
-    prev_seq, time = first_seen.seq, first_seen.epoch
+    prev_mac = last_seen.mac
+    prev_seq, time = last_seen.seq, last_seen.epoch
     after = list()
     firstMACtime = 0; lastMACtime = 0
     i = 0; f = 0; fcount = 0; LastAVdb = ApplAV
@@ -311,28 +309,26 @@ def magic(target_frame):
         else:
             skip = False
 
-        if frame.mac in Irrlist or frame.resolve:
+        if frame.mac in Irrlist or (frame.resolve and frame.mac != target_frame.mac):
+            continue
+
+        if not (frame.ext_cap == first_seen.ext_cap and frame.ht_cap == first_seen.ht_cap and frame.ampduparam == first_seen.ampduparam
+                and frame.vendor_data == first_seen.vendor_data and frame.rbitmask_8to15 == first_seen.rbitmask_8to15):
+            Irrlist.add(frame.mac)
             continue
 
         if frame.mac in avdict.keys():
             macfcount = RequestPacket.frame_count[frame.mac]
         t_delta = frame.epoch - time
 
-        if t_delta < 0.3 and prev_mac != frame.mac:
+        if prev_mac != frame.mac and t_delta < 0.05:
             Irrlist.add(frame.mac)
             continue
-        elif t_delta < 3.8:
-            max_sn_delta = eq1
-        elif t_delta < 11.4:
+        elif t_delta < 560:
             if LastAVdb - RequestPacket.frame_count[frame.mac] > 4:
-                max_sn_delta = 30
+                max_sn_delta = eq1
             else:
-                max_sn_delta = eq2
-        elif t_delta < 360:
-            if LastAVdb - RequestPacket.frame_count[frame.mac] > 4:
-                max_sn_delta = 70
-            else:
-                max_sn_delta = eq3
+                max_sn_delta = eq1
         else:
             break
 
@@ -341,10 +337,11 @@ def magic(target_frame):
         else:
             sn_delta = 4096 - prev_seq + frame.seq
 
-        if sn_delta <= max_sn_delta or (prev_mac == frame.mac) or (frame.mac == target_frame.mac): #if seq within range or it's the same last MAC
+        # if seq within range, or it's the same as last or target MAC
+        if sn_delta <= max_sn_delta or (prev_mac == frame.mac) or (frame.mac == target_frame.mac):
 
             human_time = datetime.datetime.fromtimestamp(frame.epoch).strftime("%H:%M:%S.%f")
-            after.append([frame.mac, frame.seq, human_time, frame.dbm, str(round(t_delta, 3)), str(max_sn_delta), str(sn_delta)])
+            after.append([frame.mac, frame.seq, human_time, frame.dbm, round(t_delta, 3), max_sn_delta, sn_delta])
 
             prev_mac = frame.mac
             # LastDb = int(dline[3])
@@ -388,11 +385,11 @@ def magic(target_frame):
 
     print()
     out += '{}{}{}'.format('number of frames: ', str(fcount), '\r\n')
-    out += '{}{}{}'.format('num. of ignored MACS ', str(len(Irrlist)), '\r\n')
-    #out += '{}{}{}'.format('output lines ', str(len(after)), '\r\n')
-    out += '{}{}{}{}{}'.format('searched lines ', str(i), ' out of ', str(len(dlist)), '\r\n')
-    out += '{}{}{}'.format('Average dict length ', str(len(avdict)), '\r\n')
-    out += '{}{}{}{}'.format('in ', str(round(timer.time() - exectime, 2)), ' seconds', '\r\n')
+    out += '{}{}{}'.format('num. of ignored MACS: ', str(len(Irrlist)), '\r\n')
+    out += '{}{}{}{}{}'.format('searched lines: ', str(i), ' out of ', str(len(RequestPacket.frames)), '\r\n')
+    out += '{}{}{}'.format('Derandomized frames ', str(len(after)), '\r\n')
+    out += '{}{}{}'.format('Unique MAC addresses: ', str(len(avdict)), '\r\n')
+    out += '{}{}{}{}'.format('Processing time: ', str(round(timer.time() - exectime, 2)), 's', '\r\n')
     out += '{}{}'.format('-------------------------------------------------------------------', '\r\n')
     print(out)
     toGUI += '\r\n' + out
