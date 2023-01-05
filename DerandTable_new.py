@@ -11,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
 import Derand
-import time
+import time, json, os
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -203,8 +203,9 @@ class Ui_MainWindow(object):
         MainWindow.setTabOrder(self.flagSwitch, self.Derand)
         MainWindow.setTabOrder(self.Derand, self.Result)
 
-        self.start.setText('e8:36:17:0d:34:63')
+        self.start.setText('MAC')
         self.csvDir.setText('1dec')
+        self.fetch_config()
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -235,10 +236,36 @@ class Ui_MainWindow(object):
         #msg.setDetailedText("The details are as follows:")
         retval = msg.exec_()
 
+    def update_config(self):
+        with open('./Derand.cfg', 'w') as f:
+            f.write(json.dumps({'file':self.label_4.text(), 'mac':self.start.text(), 'eq1':self.eq1.text(), 'eq2':self.eq2.text(), 'eq3':self.eq3.text(), 'MaxSNgap':self.MaxSNgap.text(), 'MaxDb':self.MaxDb.text(), 'MaxAV':self.MaxAV.text()}))
+
+    def fetch_config(self):
+        if not os.path.exists('./Derand.cfg'):
+            return
+        with open('./Derand.cfg', 'r') as f:
+            config = json.loads(f.read())
+            self.label_4.setText(config['file'])
+            self.start.setText(config['mac'])
+            self.eq1.setProperty('value', config['eq1'])
+            self.eq2.setProperty('value', config['eq2'])
+            self.eq3.setProperty('value', config['eq3'])
+            self.MaxSNgap.setProperty('value', config['MaxSNgap'])
+            self.MaxDb.setProperty('value', config['MaxDb'])
+            self.MaxAV.setProperty('value', config['MaxDb'])
+
+    def set_defaults(self):
+        self.eq1.setProperty('value', 60)
+        self.eq2.setProperty('value', 60)
+        self.eq3.setProperty('value', 60)
+        self.MaxSNgap.setProperty('value', 240)
+        self.MaxDb.setProperty('value', -99)
+        self.MaxAV.setProperty('value', -90)
+
     def on_click(self):
         self.Derand.setEnabled(False)
         Derand.showAppl = self.printDesignated.isChecked()
-        self.Result.setPlainText('list out of range!')
+        #self.Result.setPlainText('list out of range!')
         Derand.dname = self.csvDir.text()
         try:
             Derand.MAC = self.start.text().lower()
@@ -264,21 +291,18 @@ class Ui_MainWindow(object):
 
         for num, line in enumerate(Derand.dlist):
             Derand.frames[num] = Derand.RequestPacket(*line)
-        target_frame = Derand.RequestPacket.boundaries(self.start.text())
-        magic_fail = Derand.magic(target_frame)
-        # if not magic_fail:
-        #     if Derand.start > len(Derand.dlist):
-        #         return
+        magic_fail = Derand.magic(self.start.text())
+        self.update_config()
         self.Result.setEnabled(True)
-        if not magic_fail:
-            self.Result.setPlainText(Derand.toGUI)
+        #if not magic_fail:
+        self.Result.setPlainText(Derand.toGUI)
         self.Derand.setEnabled(True)
-        #print(Derand.result)
 
     def update_progress(self, done, total):
         self.progressBar.setValue(done / total * 100)
 
     def generate(self):
+        self.update_config()
         # Derand.cap = self.csvDir.text()
         Derand.dname = "Derand-" + self.csvDir.text()
         capSize = Derand.makeDlist()
