@@ -6,8 +6,8 @@ import httplib, urllib
 import glob
 import sys
 
-token = 'aw5uyqzgeezbmqjf65g27h7saviyxx'
-user = 'up81pubzck6vdog6zwsew4obx2x7rz'
+token = 'XXXXXXXXXX'
+user = 'XXXXXXXXXXX'
 
 co = None
 filename = ''

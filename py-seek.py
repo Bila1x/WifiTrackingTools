@@ -9,8 +9,8 @@ from subprocess import Popen, PIPE
 
 import requests
 
-token = 'aw5uyqzgeezbmqjf65g27h7saviyxx'
-user = 'up81pubzck6vdog6zwsew4obx2x7rz'
+token = 'XXXXXXXXX'
+user = 'XXXXXXXXXX'
 cap_location = './cap/'
 tmp_location = './'
 tmp_cap = 'temp.cap'
