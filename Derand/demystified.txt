@@ -1,5 +1,0 @@
-avlist = [mac, averageDBm, helperINT]
-
-ApplAV = INT: Average DBm of designated MAC
-Irrlist = list of MACs deemed not relevant
-eq1, 2 3 = time gaps
