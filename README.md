@@ -81,7 +81,7 @@ replace the list of SSIDs you'd like to use. Use SSIDs that are commonly used in
    - Modify the script's `TOKEN` and `USER` variables obtained from Pushover. You can also modify the interval of checking for clients.  
 
 
-4. `pyshake.py` (Optional) same as `notifier.py` with the addition of de-authenticating random clients connected to random APs in order to collect authentication handshakes (with `capture.py`) to use for cracking.  
+4. `shake.py` (Optional) same as `notifier.py` with the addition of de-authenticating random clients connected to random APs in order to collect authentication handshakes (with `capture.py`) to use for cracking.  
 
 
 ## Analysis Tools
@@ -112,7 +112,7 @@ ___
 ___
 - The RPi tools are designed with low power usage in mind, capturing and notifying uses few CPU cycles and disables unneeded HDMI port and embedded wifi adapter.
 - Power usage is measured using a USB XXXXXXXX. The following graph shows peeks every 5 senconds (`notifier.py` analysis interval).
-- `deanonymizer.py` and `py-shake.py` use more energy since they actively send data over the external (power hungry) USB adapter. The usage varies depending on the number of devices in proximity. `deanonymizer.py` only sends probe responses to anomyized devices.
+- `deanonymizer.py` and `shake.py` use more energy since they actively send data over the external (power hungry) USB adapter. The usage varies depending on the number of devices in proximity. `deanonymizer.py` only sends probe responses to anomyized devices.
 - ssh or vnc access can be done using bluetooth tethering instead of wifi to save power.
 
 ## Project folder structure
@@ -145,7 +145,7 @@ ___
 > A: MAC addresses that appear in the receiver or transmitter fields of an Ethernet frame but never as a sender or destination in the whole capture file. It's not possible to determine if this is an AP or a station.  
 
 > **Q: Do these tools work passively or actively?**  
-> A: Only `pyshake.py` and `deanonymizer.py` send out frames.  
+> A: Only `shake.py` and `deanonymizer.py` send out frames.  
 
 > **Q: Why channel 6 is used for capture?**  
 > A: This allows for capturing data from slightly lower or higher channels, meaning more data!. When devices probe, they do so on all channels sequentially. APs usually stay within the same channel.  
